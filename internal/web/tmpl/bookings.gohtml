@@ -1,0 +1,22 @@
+<!--
+SPDX-FileCopyrightText: 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+{{ template "header.gohtml" }}
+<h1>Desk Bookings for {{ .Date.Format "02/01/2006" }}</h1>
+<table class="table table-striped table-sm align-middle">
+    <thead>
+    <tr>
+        <th>Desk</th>
+        <th>Booked By</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{ range .Desks }}
+        <tr>
+            <td>{{ .Name }}</td>
+            <td>{{ with (index $.Bookings .ID) }}{{ .User.Name }}{{ end }}</td>
+        </tr>
+    {{ end }}
+    </tbody>
+</table>

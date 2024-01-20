@@ -1,0 +1,140 @@
+// SPDX-FileCopyrightText: 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package booking
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/admacleod/deskd/internal/desk"
+	"github.com/admacleod/deskd/internal/user"
+)
+
+type ID int
+
+type Slot struct {
+	Start, End time.Time
+}
+
+type Booking struct {
+	ID   ID
+	User user.User
+	Desk desk.Desk
+	Slot Slot
+}
+
+type AlreadyBookedError struct {
+	Desk desk.Desk
+	Slot Slot
+	Err  error
+}
+
+func (err AlreadyBookedError) Unwrap() error {
+	return err.Err
+}
+
+func (err AlreadyBookedError) Error() string {
+	return fmt.Sprintf("desk with ID %d already booked between %q and %q: %v", err.Desk.ID, err.Slot.Start, err.Slot.End, err.Err)
+}
+
+type UnbookableDeskError struct {
+	Desk desk.ID
+	Err  error
+}
+
+func (err UnbookableDeskError) Unwrap() error {
+	return err.Err
+}
+
+func (err UnbookableDeskError) Error() string {
+	return fmt.Sprintf("desk with ID %d is not able to be booked: %v", err.Desk, err.Err)
+}
+
+type Store interface {
+	GetDeskBookings(context.Context, desk.ID) ([]Booking, error)
+	AddBooking(context.Context, Booking) error
+	GetAllBookingsForDate(context.Context, time.Time) ([]Booking, error)
+	GetFutureBookingsForUser(context.Context, user.User) ([]Booking, error)
+	DeleteBooking(context.Context, ID) error
+}
+
+type Service struct {
+	Store Store
+}
+
+// Book attempts to create a booking for a user at a for a given time slot.
+// It checks for any issues with the desk's status and for any booking conflicts
+// before creating the booking entry in the store.
+func (svc Service) Book(ctx context.Context, u user.User, d desk.Desk, slot Slot) (Booking, error) {
+	if d.Status != desk.StatusOK {
+		return Booking{}, UnbookableDeskError{Desk: d.ID, Err: d.Status}
+	}
+	ub, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+	if err != nil {
+		return Booking{}, fmt.Errorf("get bookings for user %q: %w", u.Name, err)
+	}
+	for _, b := range ub {
+		if b.Slot.Start == slot.Start {
+			return Booking{}, errors.New("user already has a booking for this slot")
+		}
+	}
+	bb, err := svc.Store.GetDeskBookings(ctx, d.ID)
+	if err != nil {
+		return Booking{}, fmt.Errorf("get bookings for desk %d: %w", d.ID, err)
+	}
+	for _, b := range bb {
+		switch {
+		case b.Slot.End.Before(slot.Start):
+		case b.Slot.Start.After(slot.End):
+		default:
+			return Booking{}, AlreadyBookedError{Desk: d, Slot: b.Slot}
+		}
+	}
+	newBooking := Booking{
+		User: u,
+		Desk: d,
+		Slot: slot,
+	}
+	if err := svc.Store.AddBooking(ctx, newBooking); err != nil {
+		return Booking{}, fmt.Errorf("add booking for desk %d: %w", d.ID, err)
+	}
+	return newBooking, nil
+}
+
+func (svc Service) Bookings(ctx context.Context, date time.Time) ([]Booking, error) {
+	bb, err := svc.Store.GetAllBookingsForDate(ctx, date)
+	if err != nil {
+		return nil, fmt.Errorf("retrieve all bookings for date %q from store: %w", date, err)
+	}
+	return bb, nil
+}
+
+func (svc Service) UserBookings(ctx context.Context, u user.User) ([]Booking, error) {
+	bb, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+	if err != nil {
+		return nil, fmt.Errorf("retrieve all bookings for user %q from store: %w", u.Name, err)
+	}
+	return bb, nil
+}
+
+func (svc Service) CancelBooking(ctx context.Context, id ID, u user.User) error {
+	bb, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+	if err != nil {
+		return fmt.Errorf("retrieve all bookings for user %q: %w", u.Name, err)
+	}
+	// Check that booking actually belongs to the calling user.
+	var found bool
+	for _, b := range bb {
+		if b.User.ID == u.ID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.New("booking not found for user")
+	}
+	return svc.Store.DeleteBooking(ctx, id)
+}
