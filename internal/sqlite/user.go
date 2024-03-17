@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	querySelectUserByEmail = `SELECT id, name, email, password FROM users WHERE email = ?`
-	querySelectUserByID    = `SELECT id, name, email, password FROM users WHERE id = ?`
+	querySelectUserByEmail = `SELECT id, name, email FROM users WHERE email = ?`
+	querySelectUserByID    = `SELECT id, name, email FROM users WHERE id = ?`
 )
 
 func (db *Database) GetUser(ctx context.Context, email string) (user.User, error) {
 	var u user.User
-	err := db.conn.QueryRowContext(ctx, querySelectUserByEmail, email).Scan(&u.ID, &u.Name, &u.Email, &u.Password)
+	err := db.conn.QueryRowContext(ctx, querySelectUserByEmail, email).Scan(&u.ID, &u.Name, &u.Email)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return user.User{}, user.NotFoundError{Err: err, Email: email}
@@ -31,7 +31,7 @@ func (db *Database) GetUser(ctx context.Context, email string) (user.User, error
 
 func (db *Database) GetUserByID(ctx context.Context, id user.ID) (user.User, error) {
 	var u user.User
-	err := db.conn.QueryRowContext(ctx, querySelectUserByID, id).Scan(&u.ID, &u.Name, &u.Email, &u.Password)
+	err := db.conn.QueryRowContext(ctx, querySelectUserByID, id).Scan(&u.ID, &u.Name, &u.Email)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return user.User{}, user.NotFoundError{Err: err, ID: id}

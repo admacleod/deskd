@@ -6,7 +6,9 @@ package web
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/admacleod/deskd/internal/user"
 )
@@ -26,9 +28,10 @@ func getUserFromContext(ctx context.Context) (user.User, error) {
 
 func (ui *UI) BasicAuth(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := r.Header.Get("REMOTE_USER")
+		username := os.Getenv("REMOTE_USER")
 		u, err := ui.UserSvc.User(r.Context(), username)
 		if err != nil {
+			log.Printf("auth: %v", err)
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}

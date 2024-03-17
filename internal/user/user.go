@@ -20,7 +20,6 @@ type User struct {
 	ID       ID
 	Name     string
 	Email    string
-	Password string
 }
 
 type Store interface {

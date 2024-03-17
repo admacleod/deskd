@@ -1,4 +1,3 @@
-
 [SPDX-FileCopyrightText: 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>]::
 [SPDX-License-Identifier: AGPL-3.0-only]::
 
@@ -10,24 +9,12 @@ It is purposefully simple to make it easier to deploy.
 The code is made available under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html).
 For commercial licences please get in touch.
 
-`deskd` runs as a daemon serving fcgi over a unix socket.
+`deskd` is intended to be run as a cgi program on a web server.
 
 ## Building
 
 Everything is Go, so you can just use `go build` or `go install` to build binaries.
 Alternatively there is a `Makefile` that contains prepared commands for building production ready binaries.
-
-## Deployment
-
-`deskd` is very simple and can be run from anywhere and integrated with a webserver like OpenBSD httpd.
-It is recommended to run it in a chroot/jail/container of some form to ensure that it cannot be used to compromise a wider system.
-`deskd` uses HTTP Basic Authentication so make sure it is served over TLS.
-
-On first start `deskd` will create a sqlite database at whichever location is configured,
-and will configure that database with the required schema for `deskd` to operate.
-All that is then required is to add records to the database that define the desks and users.
-
-Optionally you can have `deskd` serve a favicon and/or a desk layout map by putting the files `favicon.ico` and `floorplan.png` into the static directory.
 
 ## Configuration
 
@@ -41,5 +28,96 @@ The configuration options are as follows:
 | Flag      | Env                | Type      | Default                       | Description                                              |
 |-----------|--------------------|-----------|-------------------------------|----------------------------------------------------------|
 | `-db`     | `DESKD_DB`         | `string`  | `"test.db"`                   | Location of the database                                 |
-| `-socket` | `DESKD_SOCKET`     | `string`  | `"/var/www/run/deskd.socket"` | Location of the socket serving FCGI                      |
-| `-static` | `DESKD_STATIC_DIR` | `string`  | `"static"`                    | Path to directory that static assets will be served from |
+
+## Deployment
+
+The intention is for `deskd` to be run on OpenBSD httpd, the details of how to
+do so are documented below.
+
+### Configure chroot
+
+Because this is a Go program and we cannot yet statically compile without CGo on
+OpenBSD with sqlite you will need to add some libraries to the chroot:
+```
+mkdir -p /var/www/usr/lib
+mkdir -p /var/www/usr/libexec
+cp /usr/lib/libc.so.<version> /var/www/usr/lib/
+cp /usr/lib/libpthread.so.<version> /var/www/usr/lib/
+cp /usr/libexec/ld.so /var/www/usr/libexec/
+```
+
+I often tend to create a separate directory for the db to live in, but make sure
+it is writable by the `www` user:
+```
+mkdir -p /var/www/db
+chown www:www /var/www/db
+```
+
+### Move the binary to the chroot
+
+Build the binary and then move it to `/var/www/cgi-bin`.
+
+### Configure htpasswd
+
+You want user access security right?
+
+Use `htpasswd(1)` to configure users to a `.htpasswd` file within the chroot
+(`/var/www`).
+
+**Note** you will also need to add the user records into the db once it is
+created because otherwise it will not be possible to display usable usernames
+against bookings (I hope to fix this in the future).
+
+### Copy static files
+
+If you would like deskd to use your favicon and display a floorplan when booking
+desks then copy `favicon.ico` and `floorplan.png` into a suitable location, I
+tend to choose `/var/www/htdocs/static`.
+
+### Configure httpd
+
+Update the httpd.conf to correctly use TLS (**NEVER** do HTTP Basic Auth over an
+unsecured channel), to redirect to TLS and to serve CGI and static files.
+
+```
+server "deskd.example.com" {
+	listen on * tls port https
+	authenticate with "/.htpasswd"
+	tls {
+		certificate "/etc/ssl/deskd.example.com.pem"
+		key "/etc/ssl/private/deskd.example.com.key"
+	}
+	location "/static/*" {
+		root "/htdocs"
+	}
+	location "*" {
+		fastcgi {
+			param SCRIPT_FILENAME "/cgi-bin/deskd"
+			param DESKD_DB "/db/deskd.db"
+		}
+	}
+}
+
+server "deskd.example.com" {
+	listen on * port http
+	location "/.well-known/acme-challenge/*" {
+		root "/acme"
+		request strip 2
+	}
+	location "*" {
+		block return 301 "https://$HTTP_HOST$REQUEST_URI"
+	}
+}
+```
+
+### Start everything
+
+Start (or restart) the relevant services:
+```
+rcctl start httpd slowcgi
+```
+
+### Troubleshooting
+
+You may have some permissions issues with the initial database setup (I need to
+fix this), just make sure it can be read and written by `www` user.
