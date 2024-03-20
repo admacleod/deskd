@@ -26,22 +26,12 @@ CREATE TABLE IF NOT EXISTS desks (
     name TEXT UNIQUE NOT NULL,
     status INTEGER DEFAULT 0
 );
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
-);
 CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
+    user TEXT,
     desk_id INTEGER,
     start DATE,
     end DATE,
-    FOREIGN KEY (user_id)
-        REFERENCES users (id)
-            ON DELETE CASCADE
-            ON UPDATE NO ACTION,
     FOREIGN KEY (desk_id)
         REFERENCES desks (id)
             ON DELETE CASCADE

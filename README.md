@@ -64,9 +64,8 @@ You want user access security right?
 Use `htpasswd(1)` to configure users to a `.htpasswd` file within the chroot
 (`/var/www`).
 
-**Note** you will also need to add the user records into the db once it is
-created because otherwise it will not be possible to display usable usernames
-against bookings (I hope to fix this in the future).
+**Note** the username you use for `.htpasswd` is also the username that will be
+displayed inside the application to identify booked desks.
 
 ### Copy static files
 

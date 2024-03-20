@@ -8,7 +8,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -16,14 +15,13 @@ import (
 
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/desk"
-	"github.com/admacleod/deskd/internal/user"
 )
 
 type bookingService interface {
-	Book(context.Context, user.User, desk.Desk, booking.Slot) (booking.Booking, error)
+	Book(context.Context, string, desk.Desk, booking.Slot) (booking.Booking, error)
 	Bookings(context.Context, time.Time) ([]booking.Booking, error)
-	UserBookings(context.Context, user.User) ([]booking.Booking, error)
-	CancelBooking(context.Context, booking.ID, user.User) error
+	UserBookings(context.Context, string) ([]booking.Booking, error)
+	CancelBooking(context.Context, booking.ID, string) error
 }
 
 type deskService interface {
@@ -32,16 +30,10 @@ type deskService interface {
 	Desk(context.Context, desk.ID) (desk.Desk, error)
 }
 
-type userService interface {
-	User(context.Context, string) (user.User, error)
-	UserByID(context.Context, user.ID) (user.User, error)
-}
-
 type UI struct {
 	tmpl       *template.Template
 	BookingSvc bookingService
 	DeskSvc    deskService
-	UserSvc    userService
 }
 
 //go:embed tmpl/*
@@ -91,12 +83,6 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 	}
 	bookingMap := make(map[desk.ID]booking.Booking)
 	for _, b := range bb {
-		u, err := ui.UserSvc.UserByID(r.Context(), b.User.ID)
-		if err != nil {
-			log.Printf("Unable to get user %d for desk %d on day %q: %v", b.User.ID, b.Desk.ID, day, err)
-			continue
-		}
-		b.User = u
 		bookingMap[b.Desk.ID] = b
 	}
 	data := struct {
@@ -246,7 +232,7 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 	}
 	bb, err := ui.BookingSvc.UserBookings(r.Context(), u)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("list booked desks for user %q: %v", u.Name, err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("list booked desks for user %q: %v", u, err), http.StatusInternalServerError)
 		return
 	}
 	sort.Slice(bb, func(i, j int) bool {

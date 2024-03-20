@@ -6,22 +6,19 @@ package web
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
-
-	"github.com/admacleod/deskd/internal/user"
 )
 
 type contextKey string
 
 const userContextKey contextKey = "userContextKey"
 
-func getUserFromContext(ctx context.Context) (user.User, error) {
+func getUserFromContext(ctx context.Context) (string, error) {
 	userValue := ctx.Value(userContextKey)
-	u, ok := userValue.(user.User)
+	u, ok := userValue.(string)
 	if !ok {
-		return user.User{}, fmt.Errorf("nil or invalid user stored in context %+#v", userValue)
+		return "", fmt.Errorf("nil or invalid user stored in context %+#v", userValue)
 	}
 	return u, nil
 }
@@ -29,13 +26,7 @@ func getUserFromContext(ctx context.Context) (user.User, error) {
 func (ui *UI) BasicAuth(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username := os.Getenv("REMOTE_USER")
-		u, err := ui.UserSvc.User(r.Context(), username)
-		if err != nil {
-			log.Printf("auth: %v", err)
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-		userCtx := context.WithValue(r.Context(), userContextKey, u)
+		userCtx := context.WithValue(r.Context(), userContextKey, username)
 		r = r.WithContext(userCtx)
 		next.ServeHTTP(w, r)
 	}

@@ -12,7 +12,6 @@ import (
 
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/desk"
-	"github.com/admacleod/deskd/internal/user"
 )
 
 type testBookingStore map[desk.ID][]booking.Booking
@@ -23,19 +22,19 @@ type testDB struct {
 	b        booking.Booking
 }
 
-func (t testDB) GetFutureBookingsForUser(ctx context.Context, u user.User) ([]booking.Booking, error) {
+func (t *testDB) GetFutureBookingsForUser(_ context.Context, _ string) ([]booking.Booking, error) {
 	return nil, nil
 }
 
-func (t testDB) DeleteBooking(ctx context.Context, id booking.ID) error {
+func (t *testDB) DeleteBooking(_ context.Context, _ booking.ID) error {
 	return nil
 }
 
-func (t testDB) GetAllBookingsForDate(ctx context.Context, t2 time.Time) ([]booking.Booking, error) {
+func (t *testDB) GetAllBookingsForDate(_ context.Context, _ time.Time) ([]booking.Booking, error) {
 	return nil, nil
 }
 
-func (t testDB) GetDeskBookings(_ context.Context, deskID desk.ID) ([]booking.Booking, error) {
+func (t *testDB) GetDeskBookings(_ context.Context, deskID desk.ID) ([]booking.Booking, error) {
 	return t.bookings[deskID], t.err
 }
 
@@ -49,28 +48,26 @@ func TestBookDesk(t *testing.T) {
 	testAdd1H := testNow.Add(1 * time.Hour)
 	testAdd2H := testNow.Add(2 * time.Hour)
 	testAdd3H := testNow.Add(3 * time.Hour)
-	testUserID := user.ID(123)
+	testUser := "foo@example.com"
 	testDeskID := desk.ID(456)
 	testErr := errors.New("test")
 	tests := map[string]struct {
 		db     testDB
-		userID user.ID
+		user   string
 		deskID desk.ID
 		slot   booking.Slot
 		expect booking.Booking
 		err    any
 	}{
 		"success": {
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd1H,
 			},
 			expect: booking.Booking{
-				User: user.User{
-					ID: testUserID,
-				},
+				User: testUser,
 				Desk: desk.Desk{
 					ID: testDeskID,
 				},
@@ -84,7 +81,7 @@ func TestBookDesk(t *testing.T) {
 			db: testDB{
 				err: testErr,
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testNow,
@@ -102,7 +99,7 @@ func TestBookDesk(t *testing.T) {
 					}}},
 				},
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testNow,
@@ -120,7 +117,7 @@ func TestBookDesk(t *testing.T) {
 					}}},
 				},
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testAdd1H,
@@ -138,7 +135,7 @@ func TestBookDesk(t *testing.T) {
 					}}},
 				},
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testNow,
@@ -156,7 +153,7 @@ func TestBookDesk(t *testing.T) {
 					}}},
 				},
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testAdd1H,
@@ -174,7 +171,7 @@ func TestBookDesk(t *testing.T) {
 					}}},
 				},
 			},
-			userID: testUserID,
+			user:   testUser,
 			deskID: testDeskID,
 			slot: booking.Slot{
 				Start: testNow,
@@ -188,7 +185,7 @@ func TestBookDesk(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			svc := booking.Service{Store: &test.db}
-			actual, err := svc.Book(context.Background(), user.User{ID: test.userID}, desk.Desk{ID: test.deskID}, test.slot)
+			actual, err := svc.Book(context.Background(), test.user, desk.Desk{ID: test.deskID}, test.slot)
 			switch {
 			case test.err == nil:
 				if !reflect.DeepEqual(test.expect, actual) {

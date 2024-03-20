@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/desk"
-	"github.com/admacleod/deskd/internal/user"
 )
 
 type ID int
@@ -21,7 +20,7 @@ type Slot struct {
 
 type Booking struct {
 	ID   ID
-	User user.User
+	User string
 	Desk desk.Desk
 	Slot Slot
 }
@@ -57,7 +56,7 @@ type Store interface {
 	GetDeskBookings(context.Context, desk.ID) ([]Booking, error)
 	AddBooking(context.Context, Booking) error
 	GetAllBookingsForDate(context.Context, time.Time) ([]Booking, error)
-	GetFutureBookingsForUser(context.Context, user.User) ([]Booking, error)
+	GetFutureBookingsForUser(context.Context, string) ([]Booking, error)
 	DeleteBooking(context.Context, ID) error
 }
 
@@ -68,13 +67,13 @@ type Service struct {
 // Book attempts to create a booking for a user at a for a given time slot.
 // It checks for any issues with the desk's status and for any booking conflicts
 // before creating the booking entry in the store.
-func (svc Service) Book(ctx context.Context, u user.User, d desk.Desk, slot Slot) (Booking, error) {
+func (svc Service) Book(ctx context.Context, user string, d desk.Desk, slot Slot) (Booking, error) {
 	if d.Status != desk.StatusOK {
 		return Booking{}, UnbookableDeskError{Desk: d.ID, Err: d.Status}
 	}
-	ub, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+	ub, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
-		return Booking{}, fmt.Errorf("get bookings for user %q: %w", u.Name, err)
+		return Booking{}, fmt.Errorf("get bookings for user %q: %w", user, err)
 	}
 	for _, b := range ub {
 		if b.Slot.Start == slot.Start {
@@ -94,7 +93,7 @@ func (svc Service) Book(ctx context.Context, u user.User, d desk.Desk, slot Slot
 		}
 	}
 	newBooking := Booking{
-		User: u,
+		User: user,
 		Desk: d,
 		Slot: slot,
 	}
@@ -112,23 +111,23 @@ func (svc Service) Bookings(ctx context.Context, date time.Time) ([]Booking, err
 	return bb, nil
 }
 
-func (svc Service) UserBookings(ctx context.Context, u user.User) ([]Booking, error) {
-	bb, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+func (svc Service) UserBookings(ctx context.Context, user string) ([]Booking, error) {
+	bb, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve all bookings for user %q from store: %w", u.Name, err)
+		return nil, fmt.Errorf("retrieve all bookings for user %q from store: %w", user, err)
 	}
 	return bb, nil
 }
 
-func (svc Service) CancelBooking(ctx context.Context, id ID, u user.User) error {
-	bb, err := svc.Store.GetFutureBookingsForUser(ctx, u)
+func (svc Service) CancelBooking(ctx context.Context, id ID, user string) error {
+	bb, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
-		return fmt.Errorf("retrieve all bookings for user %q: %w", u.Name, err)
+		return fmt.Errorf("retrieve all bookings for user %q: %w", user, err)
 	}
 	// Check that booking actually belongs to the calling user.
 	var found bool
 	for _, b := range bb {
-		if b.User.ID == u.ID {
+		if b.User == user {
 			found = true
 			break
 		}

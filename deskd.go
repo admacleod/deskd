@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"crypto"
 	"flag"
 	"log"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/desk"
 	"github.com/admacleod/deskd/internal/sqlite"
-	"github.com/admacleod/deskd/internal/user"
 	"github.com/admacleod/deskd/internal/web"
 )
 
@@ -55,15 +53,10 @@ func main() {
 	deskSvc := desk.Service{
 		Store: db,
 	}
-	userSvc := user.Service{
-		Store:        db,
-		PasswordHash: crypto.SHA256,
-	}
 
 	webUI := web.UI{
 		BookingSvc: bookingSvc,
 		DeskSvc:    deskSvc,
-		UserSvc:    userSvc,
 	}
 
 	mux := http.NewServeMux()

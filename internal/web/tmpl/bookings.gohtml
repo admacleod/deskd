@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     {{ range .Desks }}
         <tr>
             <td>{{ .Name }}</td>
-            <td>{{ with (index $.Bookings .ID) }}{{ .User.Name }}{{ end }}</td>
+            <td>{{ with (index $.Bookings .ID) }}{{ .User }}{{ end }}</td>
         </tr>
     {{ end }}
     </tbody>
