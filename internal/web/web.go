@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -162,9 +163,9 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to retrieve desk with ID %q: %v", dID, err), http.StatusInternalServerError)
 		return
 	}
-	u, err := getUserFromContext(r.Context())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("no user found: %v", err), http.StatusUnauthorized)
+	u, exists := os.LookupEnv("REMOTE_USER")
+	if !exists {
+		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
 	// Using the date for start and end as that is all we really care about here.
@@ -199,9 +200,9 @@ func (ui *UI) deleteBooking(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("invalid booking ID %q: %v", bID, err), http.StatusBadRequest)
 		return
 	}
-	u, err := getUserFromContext(r.Context())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("no user found: %v", err), http.StatusUnauthorized)
+	u, exists := os.LookupEnv("REMOTE_USER")
+	if !exists {
+		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
 	if err := ui.BookingSvc.CancelBooking(r.Context(), booking.ID(bookingID), u); err != nil {
@@ -216,9 +217,9 @@ func (ui *UI) deleteBooking(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
-	u, err := getUserFromContext(r.Context())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("no user found: %v", err), http.StatusUnauthorized)
+	u, exists := os.LookupEnv("REMOTE_USER")
+	if !exists {
+		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
 	dd, err := ui.DeskSvc.Desks(r.Context())

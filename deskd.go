@@ -62,7 +62,7 @@ func main() {
 	mux := http.NewServeMux()
 	webUI.RegisterHandlers(mux)
 
-	if err := cgi.Serve(webUI.BasicAuth(mux)); err != nil {
+	if err := cgi.Serve(mux); err != nil {
 		log.Printf("Problem serving request: %v", err)
 		os.Exit(1)
 	}
