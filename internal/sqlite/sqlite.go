@@ -13,11 +13,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/admacleod/deskd/internal/booking"
+	"github.com/admacleod/deskd/internal/desk"
 )
 
 var (
 	_ booking.Store = &Database{}
-	_ booking.Store = &Database{}
+	_ desk.Store    = &Database{}
 )
 
 const schema = `
