@@ -36,7 +36,7 @@ do so are documented below.
 
 ### Configure chroot
 
-Because this is a Go program and we cannot yet statically compile without CGo on
+Because this is a Go program, and we cannot yet statically compile without CGo on
 OpenBSD with sqlite you will need to add some libraries to the chroot:
 ```
 mkdir -p /var/www/usr/lib

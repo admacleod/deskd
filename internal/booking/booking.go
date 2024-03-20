@@ -68,7 +68,7 @@ type Service struct {
 // It checks for any issues with the desk's status and for any booking conflicts
 // before creating the booking entry in the store.
 func (svc Service) Book(ctx context.Context, user string, d desk.Desk, slot Slot) (Booking, error) {
-	if d.Status != desk.StatusOK {
+	if !errors.Is(d.Status, desk.StatusOK) {
 		return Booking{}, UnbookableDeskError{Desk: d.ID, Err: d.Status}
 	}
 	ub, err := svc.Store.GetFutureBookingsForUser(ctx, user)

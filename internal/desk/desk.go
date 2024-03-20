@@ -24,10 +24,10 @@ const (
 )
 
 func (s Status) Error() string {
-	switch s {
-	case StatusOK:
+	switch {
+	case errors.Is(s, StatusOK):
 		return "ok"
-	case StatusReserved:
+	case errors.Is(s, StatusReserved):
 		return "reserved"
 	}
 	return "unknown"
