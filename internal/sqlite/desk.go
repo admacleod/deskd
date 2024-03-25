@@ -10,16 +10,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/admacleod/deskd/internal/desk"
+	"github.com/admacleod/deskd/internal/booking"
 )
 
 const (
-	querySelectAvailableDesksByDate = `SELECT id, name, status FROM desks WHERE id NOT IN (SELECT desk_id FROM bookings WHERE ? BETWEEN start AND end)`
-	querySelectDesks                = `SELECT id, name, status FROM desks`
-	querySelectDeskByID             = `SELECT id, name, status FROM desks WHERE id = ?`
+	querySelectAvailableDesksByDate = `SELECT id, name FROM desks WHERE id NOT IN (SELECT desk_id FROM bookings WHERE ? BETWEEN start AND end)`
+	querySelectDesks                = `SELECT id, name FROM desks`
+	querySelectDeskByID             = `SELECT id, name FROM desks WHERE id = ?`
 )
 
-func (db *Database) GetAvailableDesks(ctx context.Context, date time.Time) (_ []desk.Desk, err error) {
+func (db *Database) AvailableDesks(ctx context.Context, date time.Time) (_ []booking.Desk, err error) {
 	rows, err := db.conn.QueryContext(ctx, querySelectAvailableDesksByDate, date)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
@@ -31,10 +31,10 @@ func (db *Database) GetAvailableDesks(ctx context.Context, date time.Time) (_ []
 			err = cerr
 		}
 	}()
-	var ret []desk.Desk
+	var ret []booking.Desk
 	for rows.Next() {
-		var d desk.Desk
-		if err := rows.Scan(&d.ID, &d.Name, &d.Status); err != nil {
+		var d booking.Desk
+		if err := rows.Scan(&d.ID, &d.Name); err != nil {
 			return nil, fmt.Errorf("scan desk from database: %w", err)
 		}
 		ret = append(ret, d)
@@ -42,7 +42,7 @@ func (db *Database) GetAvailableDesks(ctx context.Context, date time.Time) (_ []
 	return ret, nil
 }
 
-func (db *Database) GetAllDesks(ctx context.Context) (_ []desk.Desk, err error) {
+func (db *Database) Desks(ctx context.Context) (_ []booking.Desk, err error) {
 	rows, err := db.conn.QueryContext(ctx, querySelectDesks)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
@@ -54,10 +54,10 @@ func (db *Database) GetAllDesks(ctx context.Context) (_ []desk.Desk, err error) 
 			err = cerr
 		}
 	}()
-	var ret []desk.Desk
+	var ret []booking.Desk
 	for rows.Next() {
-		var d desk.Desk
-		if err := rows.Scan(&d.ID, &d.Name, &d.Status); err != nil {
+		var d booking.Desk
+		if err := rows.Scan(&d.ID, &d.Name); err != nil {
 			return nil, fmt.Errorf("scan desk from database: %w", err)
 		}
 		ret = append(ret, d)
@@ -65,14 +65,14 @@ func (db *Database) GetAllDesks(ctx context.Context) (_ []desk.Desk, err error) 
 	return ret, nil
 }
 
-func (db *Database) GetDesk(ctx context.Context, id desk.ID) (desk.Desk, error) {
-	var d desk.Desk
-	err := db.conn.QueryRowContext(ctx, querySelectDeskByID, id).Scan(&d.ID, &d.Name, &d.Status)
+func (db *Database) Desk(ctx context.Context, id int) (booking.Desk, error) {
+	var d booking.Desk
+	err := db.conn.QueryRowContext(ctx, querySelectDeskByID, id).Scan(&d.ID, &d.Name)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return desk.Desk{}, desk.ErrNotFound
+		return booking.Desk{}, fmt.Errorf("could not find desk %d", id)
 	case err != nil:
-		return desk.Desk{}, fmt.Errorf("retrieve desk %d from database: %w", id, err)
+		return booking.Desk{}, fmt.Errorf("retrieve desk %d from database: %w", id, err)
 	}
 	return d, nil
 }

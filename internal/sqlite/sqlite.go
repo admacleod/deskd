@@ -13,19 +13,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/desk"
 )
 
-var (
-	_ booking.Store = &Database{}
-	_ desk.Store    = &Database{}
-)
+var _ booking.Store = &Database{}
 
 const schema = `
 CREATE TABLE IF NOT EXISTS desks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
-    status INTEGER DEFAULT 0
+    name TEXT UNIQUE NOT NULL
 );
 CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

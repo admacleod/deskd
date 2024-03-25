@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/desk"
 )
 
 const (
@@ -22,7 +21,7 @@ const (
 	queryDeleteBookingByID          = `DELETE FROM bookings WHERE id = ?`
 )
 
-func (db *Database) GetDeskBookings(ctx context.Context, id desk.ID) (_ []booking.Booking, err error) {
+func (db *Database) GetDeskBookings(ctx context.Context, id int) (_ []booking.Booking, err error) {
 	rows, err := db.conn.QueryContext(ctx, querySelectBookingsByDeskID, id)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):

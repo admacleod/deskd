@@ -8,11 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/admacleod/deskd/internal/desk"
 )
 
 type ID int
+
+type Desk struct {
+	ID   int
+	Name string
+}
 
 type Slot struct {
 	Start, End time.Time
@@ -21,12 +24,12 @@ type Slot struct {
 type Booking struct {
 	ID   ID
 	User string
-	Desk desk.Desk
+	Desk Desk
 	Slot Slot
 }
 
 type AlreadyBookedError struct {
-	Desk desk.Desk
+	Desk Desk
 	Slot Slot
 	Err  error
 }
@@ -40,20 +43,16 @@ func (err AlreadyBookedError) Error() string {
 }
 
 type UnbookableDeskError struct {
-	Desk desk.ID
-	Err  error
-}
-
-func (err UnbookableDeskError) Unwrap() error {
-	return err.Err
+	Desk   int
+	Status int
 }
 
 func (err UnbookableDeskError) Error() string {
-	return fmt.Sprintf("desk with ID %d is not able to be booked: %v", err.Desk, err.Err)
+	return fmt.Sprintf("desk with ID %d is not able to be booked", err.Desk)
 }
 
 type Store interface {
-	GetDeskBookings(context.Context, desk.ID) ([]Booking, error)
+	GetDeskBookings(context.Context, int) ([]Booking, error)
 	AddBooking(context.Context, Booking) error
 	GetAllBookingsForDate(context.Context, time.Time) ([]Booking, error)
 	GetFutureBookingsForUser(context.Context, string) ([]Booking, error)
@@ -67,10 +66,7 @@ type Service struct {
 // Book attempts to create a booking for a user at a for a given time slot.
 // It checks for any issues with the desk's status and for any booking conflicts
 // before creating the booking entry in the store.
-func (svc Service) Book(ctx context.Context, user string, d desk.Desk, slot Slot) (Booking, error) {
-	if !errors.Is(d.Status, desk.StatusOK) {
-		return Booking{}, UnbookableDeskError{Desk: d.ID, Err: d.Status}
-	}
+func (svc Service) Book(ctx context.Context, user string, d Desk, slot Slot) (Booking, error) {
 	ub, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
 		return Booking{}, fmt.Errorf("get bookings for user %q: %w", user, err)

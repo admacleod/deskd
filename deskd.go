@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/desk"
 	"github.com/admacleod/deskd/internal/sqlite"
 	"github.com/admacleod/deskd/internal/web"
 )
@@ -50,13 +49,10 @@ func main() {
 	bookingSvc := booking.Service{
 		Store: db,
 	}
-	deskSvc := desk.Service{
-		Store: db,
-	}
 
 	webUI := web.UI{
 		BookingSvc: bookingSvc,
-		DeskSvc:    deskSvc,
+		DeskSvc:    db,
 	}
 
 	mux := http.NewServeMux()

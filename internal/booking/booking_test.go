@@ -11,10 +11,9 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/desk"
 )
 
-type testBookingStore map[desk.ID][]booking.Booking
+type testBookingStore map[int][]booking.Booking
 
 type testDB struct {
 	bookings testBookingStore
@@ -34,7 +33,7 @@ func (t *testDB) GetAllBookingsForDate(_ context.Context, _ time.Time) ([]bookin
 	return nil, nil
 }
 
-func (t *testDB) GetDeskBookings(_ context.Context, deskID desk.ID) ([]booking.Booking, error) {
+func (t *testDB) GetDeskBookings(_ context.Context, deskID int) ([]booking.Booking, error) {
 	return t.bookings[deskID], t.err
 }
 
@@ -49,12 +48,12 @@ func TestBookDesk(t *testing.T) {
 	testAdd2H := testNow.Add(2 * time.Hour)
 	testAdd3H := testNow.Add(3 * time.Hour)
 	testUser := "foo@example.com"
-	testDeskID := desk.ID(456)
+	testDeskID := 456
 	testErr := errors.New("test")
 	tests := map[string]struct {
 		db     testDB
 		user   string
-		deskID desk.ID
+		deskID int
 		slot   booking.Slot
 		expect booking.Booking
 		err    any
@@ -68,7 +67,7 @@ func TestBookDesk(t *testing.T) {
 			},
 			expect: booking.Booking{
 				User: testUser,
-				Desk: desk.Desk{
+				Desk: booking.Desk{
 					ID: testDeskID,
 				},
 				Slot: booking.Slot{
@@ -185,7 +184,7 @@ func TestBookDesk(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			svc := booking.Service{Store: &test.db}
-			actual, err := svc.Book(context.Background(), test.user, desk.Desk{ID: test.deskID}, test.slot)
+			actual, err := svc.Book(context.Background(), test.user, booking.Desk{ID: test.deskID}, test.slot)
 			switch {
 			case test.err == nil:
 				if !reflect.DeepEqual(test.expect, actual) {

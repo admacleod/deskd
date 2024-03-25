@@ -15,20 +15,19 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/desk"
 )
 
 type bookingService interface {
-	Book(context.Context, string, desk.Desk, booking.Slot) (booking.Booking, error)
+	Book(context.Context, string, booking.Desk, booking.Slot) (booking.Booking, error)
 	Bookings(context.Context, time.Time) ([]booking.Booking, error)
 	UserBookings(context.Context, string) ([]booking.Booking, error)
 	CancelBooking(context.Context, booking.ID, string) error
 }
 
 type deskService interface {
-	AvailableDesks(context.Context, time.Time) ([]desk.Desk, error)
-	Desks(ctx context.Context) ([]desk.Desk, error)
-	Desk(context.Context, desk.ID) (desk.Desk, error)
+	AvailableDesks(context.Context, time.Time) ([]booking.Desk, error)
+	Desks(ctx context.Context) ([]booking.Desk, error)
+	Desk(context.Context, int) (booking.Desk, error)
 }
 
 type UI struct {
@@ -84,13 +83,13 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
 	}
-	bookingMap := make(map[desk.ID]booking.Booking)
+	bookingMap := make(map[int]booking.Booking)
 	for _, b := range bb {
 		bookingMap[b.Desk.ID] = b
 	}
 	data := struct {
-		Bookings map[desk.ID]booking.Booking
-		Desks    []desk.Desk
+		Bookings map[int]booking.Booking
+		Desks    []booking.Desk
 		Date     time.Time
 	}{
 		Bookings: bookingMap,
@@ -126,7 +125,7 @@ func (ui *UI) showBookingForm(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Date  time.Time
-		Desks []desk.Desk
+		Desks []booking.Desk
 	}{
 		Date:  date,
 		Desks: dd,
@@ -151,7 +150,7 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse deskID %q: %v", dID, err), http.StatusBadRequest)
 		return
 	}
-	d, err := ui.DeskSvc.Desk(r.Context(), desk.ID(deskID))
+	d, err := ui.DeskSvc.Desk(r.Context(), deskID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("unable to retrieve desk with ID %q: %v", dID, err), http.StatusInternalServerError)
 		return
@@ -211,7 +210,7 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("list all desks: %v", err), http.StatusInternalServerError)
 		return
 	}
-	deskMap := make(map[desk.ID]desk.Desk)
+	deskMap := make(map[int]booking.Desk)
 	for _, d := range dd {
 		deskMap[d.ID] = d
 	}
@@ -225,7 +224,7 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 	})
 	data := struct {
 		Bookings []booking.Booking
-		Desks    map[desk.ID]desk.Desk
+		Desks    map[int]booking.Desk
 	}{
 		Bookings: bb,
 		Desks:    deskMap,
