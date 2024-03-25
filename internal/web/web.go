@@ -45,8 +45,10 @@ func (ui *UI) RegisterHandlers(mux *http.ServeMux) {
 
 	mux.HandleFunc("/about", ui.handleAbout)
 	mux.HandleFunc("/desks", ui.handleDesks)
-	mux.HandleFunc("/book", ui.handleBook)
-	mux.HandleFunc("/", ui.handleBookings)
+	mux.HandleFunc("POST /book", ui.bookDesk)
+	mux.HandleFunc("/book", ui.showBookingForm)
+	mux.HandleFunc("POST /", ui.deleteBooking)
+	mux.HandleFunc("/", ui.showUserBookings)
 }
 
 func (ui *UI) handleAbout(w http.ResponseWriter, _ *http.Request) {
@@ -99,15 +101,6 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 	if err := ui.tmpl.ExecuteTemplate(w, "bookings.gohtml", data); err != nil {
 		http.Error(w, fmt.Sprintf("execute bookings template: %v", err), http.StatusInternalServerError)
 		return
-	}
-}
-
-func (ui *UI) handleBook(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		ui.bookDesk(w, r)
-	default:
-		ui.showBookingForm(w, r)
 	}
 }
 
@@ -177,15 +170,6 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 	if err := ui.tmpl.ExecuteTemplate(w, "bookingSuccess.gohtml", struct{}{}); err != nil {
 		http.Error(w, fmt.Sprintf("execute booking success template: %v", err), http.StatusInternalServerError)
 		return
-	}
-}
-
-func (ui *UI) handleBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		ui.deleteBooking(w, r)
-	default:
-		ui.showUserBookings(w, r)
 	}
 }
 
