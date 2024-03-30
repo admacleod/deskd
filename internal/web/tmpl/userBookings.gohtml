@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     {{ range .Bookings }}
         <tr>
             <td>{{ .Slot.Start.Format "02/01/2006" }}</td>
-            <td>{{ with (index $.Desks .Desk.ID) }}{{ .Name }}{{ end }}</td>
+            <td>{{ .Desk }}</td>
             <td>
                 <form method="POST">
                     <input type="hidden" name="booking" value={{ .ID }}>

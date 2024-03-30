@@ -13,7 +13,7 @@ import (
 	"github.com/admacleod/deskd/internal/booking"
 )
 
-type testBookingStore map[int][]booking.Booking
+type testBookingStore map[string][]booking.Booking
 
 type testDB struct {
 	bookings testBookingStore
@@ -33,8 +33,8 @@ func (t *testDB) GetAllBookingsForDate(_ context.Context, _ time.Time) ([]bookin
 	return nil, nil
 }
 
-func (t *testDB) GetDeskBookings(_ context.Context, deskID int) ([]booking.Booking, error) {
-	return t.bookings[deskID], t.err
+func (t *testDB) GetDeskBookings(_ context.Context, desk string) ([]booking.Booking, error) {
+	return t.bookings[desk], t.err
 }
 
 func (t *testDB) AddBooking(_ context.Context, b booking.Booking) error {
@@ -48,28 +48,26 @@ func TestBookDesk(t *testing.T) {
 	testAdd2H := testNow.Add(2 * time.Hour)
 	testAdd3H := testNow.Add(3 * time.Hour)
 	testUser := "foo@example.com"
-	testDeskID := 456
+	testDesk := "456"
 	testErr := errors.New("test")
 	tests := map[string]struct {
 		db     testDB
 		user   string
-		deskID int
+		desk   string
 		slot   booking.Slot
 		expect booking.Booking
 		err    any
 	}{
 		"success": {
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd1H,
 			},
 			expect: booking.Booking{
 				User: testUser,
-				Desk: booking.Desk{
-					ID: testDeskID,
-				},
+				Desk: testDesk,
 				Slot: booking.Slot{
 					Start: testNow,
 					End:   testAdd1H,
@@ -80,8 +78,8 @@ func TestBookDesk(t *testing.T) {
 			db: testDB{
 				err: testErr,
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd1H,
@@ -92,14 +90,14 @@ func TestBookDesk(t *testing.T) {
 		"exact clash": {
 			db: testDB{
 				bookings: testBookingStore{
-					testDeskID: {{Slot: booking.Slot{
+					testDesk: {{Slot: booking.Slot{
 						Start: testNow,
 						End:   testAdd1H,
 					}}},
 				},
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd1H,
@@ -110,14 +108,14 @@ func TestBookDesk(t *testing.T) {
 		"start clash": {
 			db: testDB{
 				bookings: testBookingStore{
-					testDeskID: {{Slot: booking.Slot{
+					testDesk: {{Slot: booking.Slot{
 						Start: testNow,
 						End:   testAdd2H,
 					}}},
 				},
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testAdd1H,
 				End:   testAdd2H,
@@ -128,14 +126,14 @@ func TestBookDesk(t *testing.T) {
 		"end clash": {
 			db: testDB{
 				bookings: testBookingStore{
-					testDeskID: {{Slot: booking.Slot{
+					testDesk: {{Slot: booking.Slot{
 						Start: testAdd1H,
 						End:   testAdd3H,
 					}}},
 				},
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd2H,
@@ -146,14 +144,14 @@ func TestBookDesk(t *testing.T) {
 		"within clash": {
 			db: testDB{
 				bookings: testBookingStore{
-					testDeskID: {{Slot: booking.Slot{
+					testDesk: {{Slot: booking.Slot{
 						Start: testNow,
 						End:   testAdd3H,
 					}}},
 				},
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testAdd1H,
 				End:   testAdd2H,
@@ -164,14 +162,14 @@ func TestBookDesk(t *testing.T) {
 		"outer clash": {
 			db: testDB{
 				bookings: testBookingStore{
-					testDeskID: {{Slot: booking.Slot{
+					testDesk: {{Slot: booking.Slot{
 						Start: testAdd1H,
 						End:   testAdd2H,
 					}}},
 				},
 			},
-			user:   testUser,
-			deskID: testDeskID,
+			user: testUser,
+			desk: testDesk,
 			slot: booking.Slot{
 				Start: testNow,
 				End:   testAdd3H,
@@ -184,7 +182,7 @@ func TestBookDesk(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			svc := booking.Service{Store: &test.db}
-			actual, err := svc.Book(context.Background(), test.user, booking.Desk{ID: test.deskID}, test.slot)
+			actual, err := svc.Book(context.Background(), test.user, test.desk, test.slot)
 			switch {
 			case test.err == nil:
 				if !reflect.DeepEqual(test.expect, actual) {

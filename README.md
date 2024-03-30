@@ -25,9 +25,28 @@ Alternatively there is a `Makefile` that contains prepared commands for building
 
 The configuration options are as follows:
 
-| Flag      | Env                | Type      | Default                       | Description                                              |
-|-----------|--------------------|-----------|-------------------------------|----------------------------------------------------------|
-| `-db`     | `DESKD_DB`         | `string`  | `"test.db"`                   | Location of the database                                 |
+| Flag     | Env           | Type      | Default     | Description               |
+|----------|---------------|-----------|-------------|---------------------------|
+| `-db`    | `DESKD_DB`    | `string`  | `"test.db"` | Location of the database  |
+| `-desks` | `DESKD_DESKS` | `string`  | `"desks"`   | Location of the desk file |
+
+### Desk File
+
+The desk file is used to define desks available for bookings.
+
+It should be a single file with desk names defined, one per line.
+
+Example:
+```
+FE1
+FE2
+# Comments don't work, this is now a bookable desk name.
+FE3
+SS1
+```
+
+**Warning:** removing a desk from the file does not remove associated bookings
+from the database.
 
 ## Deployment
 

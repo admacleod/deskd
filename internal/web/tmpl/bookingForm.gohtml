@@ -10,8 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only
             <input type="hidden" name="day" value={{ .Date.Format "2006-01-02" }}>
             {{ range .Desks }}
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" id={{ .Name }} name="desk" value={{ .ID }}>
-                    <label class="form-check-label" for={{ .Name }}>{{ .Name }}</label>
+                    <input class="form-check-input" type="radio" id={{ . }} name="desk" value={{ . }}>
+                    <label class="form-check-label" for={{ . }}>{{ . }}</label>
                 </div>
             {{ else }}
                 <p>Sorry no desks are available for {{ $.Date.Format "02/01/2006" }}.</p>

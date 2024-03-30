@@ -18,16 +18,16 @@ import (
 )
 
 type bookingService interface {
-	Book(context.Context, string, booking.Desk, booking.Slot) (booking.Booking, error)
+	Book(context.Context, string, string, booking.Slot) (booking.Booking, error)
 	Bookings(context.Context, time.Time) ([]booking.Booking, error)
 	UserBookings(context.Context, string) ([]booking.Booking, error)
 	CancelBooking(context.Context, booking.ID, string) error
 }
 
 type deskService interface {
-	AvailableDesks(context.Context, time.Time) ([]booking.Desk, error)
-	Desks(ctx context.Context) ([]booking.Desk, error)
-	Desk(context.Context, int) (booking.Desk, error)
+	AvailableDesks(context.Context, time.Time) ([]string, error)
+	Desks(ctx context.Context) ([]string, error)
+	Desk(context.Context, string) (string, error)
 }
 
 type UI struct {
@@ -83,13 +83,13 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
 	}
-	bookingMap := make(map[int]booking.Booking)
+	bookingMap := make(map[string]booking.Booking)
 	for _, b := range bb {
-		bookingMap[b.Desk.ID] = b
+		bookingMap[b.Desk] = b
 	}
 	data := struct {
-		Bookings map[int]booking.Booking
-		Desks    []booking.Desk
+		Bookings map[string]booking.Booking
+		Desks    []string
 		Date     time.Time
 	}{
 		Bookings: bookingMap,
@@ -125,7 +125,7 @@ func (ui *UI) showBookingForm(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Date  time.Time
-		Desks []booking.Desk
+		Desks []string
 	}{
 		Date:  date,
 		Desks: dd,
@@ -144,15 +144,10 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
-	dID := r.FormValue("desk")
-	deskID, err := strconv.Atoi(dID)
+	desk := r.FormValue("desk")
+	d, err := ui.DeskSvc.Desk(r.Context(), desk)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to parse deskID %q: %v", dID, err), http.StatusBadRequest)
-		return
-	}
-	d, err := ui.DeskSvc.Desk(r.Context(), deskID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to retrieve desk with ID %q: %v", dID, err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("unable to retrieve desk with ID %q: %v", desk, err), http.StatusInternalServerError)
 		return
 	}
 	u, exists := os.LookupEnv("REMOTE_USER")
@@ -162,7 +157,7 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 	}
 	// Using the date for start and end as that is all we really care about here.
 	if _, err := ui.BookingSvc.Book(r.Context(), u, d, booking.Slot{Start: date, End: date.Add(1 * time.Hour)}); err != nil {
-		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, d.Name, err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, d, err), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -205,15 +200,6 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
-	dd, err := ui.DeskSvc.Desks(r.Context())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("list all desks: %v", err), http.StatusInternalServerError)
-		return
-	}
-	deskMap := make(map[int]booking.Desk)
-	for _, d := range dd {
-		deskMap[d.ID] = d
-	}
 	bb, err := ui.BookingSvc.UserBookings(r.Context(), u)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list booked desks for user %q: %v", u, err), http.StatusInternalServerError)
@@ -224,10 +210,8 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 	})
 	data := struct {
 		Bookings []booking.Booking
-		Desks    map[int]booking.Desk
 	}{
 		Bookings: bb,
-		Desks:    deskMap,
 	}
 	w.Header().Set("Content-Type", "text/html")
 	if err := ui.tmpl.ExecuteTemplate(w, "userBookings.gohtml", data); err != nil {

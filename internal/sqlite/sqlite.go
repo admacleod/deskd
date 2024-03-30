@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -18,20 +19,12 @@ import (
 var _ booking.Store = &Database{}
 
 const schema = `
-CREATE TABLE IF NOT EXISTS desks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-);
 CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user TEXT,
-    desk_id INTEGER,
+    desk TEXT,
     start DATE,
-    end DATE,
-    FOREIGN KEY (desk_id)
-        REFERENCES desks (id)
-            ON DELETE CASCADE
-            ON UPDATE NO ACTION
+    end DATE
 );
 `
 
@@ -67,4 +60,95 @@ func (db *Database) Connect(ctx context.Context, filename string) error {
 
 func (db *Database) Close() error {
 	return db.conn.Close()
+}
+
+const (
+	querySelectBookingsByDesk       = `SELECT id, user, desk, start, end FROM bookings WHERE desk = ?`
+	queryInsertBooking              = `INSERT INTO bookings (user, desk, start, end) VALUES (?,?,?,?)`
+	querySelectBookingsByDate       = `SELECT id, user, desk, start, end FROM bookings WHERE start = ?`
+	querySelectFutureBookingsByUser = `SELECT id, user, desk, start, end FROM bookings WHERE user = ? AND start >= DATE()`
+	queryDeleteBookingByID          = `DELETE FROM bookings WHERE id = ?`
+)
+
+func (db *Database) GetDeskBookings(ctx context.Context, desk string) (_ []booking.Booking, err error) {
+	rows, err := db.conn.QueryContext(ctx, querySelectBookingsByDesk, desk)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+	case err != nil:
+		return nil, fmt.Errorf("retrieve bookings for desk %q from database: %w", desk, err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	var ret []booking.Booking
+	for rows.Next() {
+		var b booking.Booking
+		if err := rows.Scan(&b.ID, &b.User, &b.Desk, &b.Slot.Start, &b.Slot.End); err != nil {
+			return nil, fmt.Errorf("scan booking for desk %q from database: %w", desk, err)
+		}
+		ret = append(ret, b)
+	}
+	return ret, nil
+}
+
+func (db *Database) AddBooking(ctx context.Context, b booking.Booking) error {
+	if _, err := db.conn.ExecContext(ctx, queryInsertBooking, b.User, b.Desk, b.Slot.Start, b.Slot.End); err != nil {
+		return fmt.Errorf("insert booking into database: %w", err)
+	}
+	return nil
+}
+
+func (db *Database) GetAllBookingsForDate(ctx context.Context, date time.Time) ([]booking.Booking, error) {
+	rows, err := db.conn.QueryContext(ctx, querySelectBookingsByDate, date)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+	case err != nil:
+		return nil, fmt.Errorf("retrieve bookings for date %q from database: %w", date, err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	var ret []booking.Booking
+	for rows.Next() {
+		var b booking.Booking
+		if err := rows.Scan(&b.ID, &b.User, &b.Desk, &b.Slot.Start, &b.Slot.End); err != nil {
+			return nil, fmt.Errorf("scan booking for date %q from database: %w", date, err)
+		}
+		ret = append(ret, b)
+	}
+	return ret, nil
+}
+
+func (db *Database) GetFutureBookingsForUser(ctx context.Context, user string) ([]booking.Booking, error) {
+	rows, err := db.conn.QueryContext(ctx, querySelectFutureBookingsByUser, user)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+	case err != nil:
+		return nil, fmt.Errorf("retrieve bookings for user %q from database: %w", user, err)
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	var ret []booking.Booking
+	for rows.Next() {
+		var b booking.Booking
+		if err := rows.Scan(&b.ID, &b.User, &b.Desk, &b.Slot.Start, &b.Slot.End); err != nil {
+			return nil, fmt.Errorf("scan booking for user %q from database: %w", user, err)
+		}
+		ret = append(ret, b)
+	}
+	return ret, nil
+}
+
+func (db *Database) DeleteBooking(ctx context.Context, id booking.ID) error {
+	if _, err := db.conn.ExecContext(ctx, queryDeleteBookingByID, id); err != nil {
+		return fmt.Errorf("delete booking %d from database: %w", id, err)
+	}
+	return nil
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/admacleod/deskd/internal/booking"
+	"github.com/admacleod/deskd/internal/file"
 	"github.com/admacleod/deskd/internal/sqlite"
 	"github.com/admacleod/deskd/internal/web"
 )
@@ -25,8 +26,9 @@ func envOrDefault(env, defaultValue string) string {
 }
 
 func main() {
-	var dbPath string
+	var dbPath, deskPath string
 	flag.StringVar(&dbPath, "db", envOrDefault("DESKD_DB", "test.db"), "database location")
+	flag.StringVar(&deskPath, "desks", envOrDefault("DESKD_DESKS", "desks"), "desk file location")
 	flag.Parse()
 
 	mainCtx, cancel := context.WithCancel(context.Background())
@@ -46,13 +48,18 @@ func main() {
 		os.Exit(3)
 	}
 
+	deskStore, err := file.Open(deskPath, db)
+	if err != nil {
+		log.Printf("Unable to open desk file: %v", err)
+	}
+
 	bookingSvc := booking.Service{
 		Store: db,
 	}
 
 	webUI := web.UI{
 		BookingSvc: bookingSvc,
-		DeskSvc:    db,
+		DeskSvc:    deskStore,
 	}
 
 	mux := http.NewServeMux()

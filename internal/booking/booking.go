@@ -12,11 +12,6 @@ import (
 
 type ID int
 
-type Desk struct {
-	ID   int
-	Name string
-}
-
 type Slot struct {
 	Start, End time.Time
 }
@@ -24,12 +19,12 @@ type Slot struct {
 type Booking struct {
 	ID   ID
 	User string
-	Desk Desk
+	Desk string
 	Slot Slot
 }
 
 type AlreadyBookedError struct {
-	Desk Desk
+	Desk string
 	Slot Slot
 	Err  error
 }
@@ -39,7 +34,7 @@ func (err AlreadyBookedError) Unwrap() error {
 }
 
 func (err AlreadyBookedError) Error() string {
-	return fmt.Sprintf("desk with ID %d already booked between %q and %q: %v", err.Desk.ID, err.Slot.Start, err.Slot.End, err.Err)
+	return fmt.Sprintf("desk with ID %q already booked between %q and %q: %v", err.Desk, err.Slot.Start, err.Slot.End, err.Err)
 }
 
 type UnbookableDeskError struct {
@@ -52,7 +47,7 @@ func (err UnbookableDeskError) Error() string {
 }
 
 type Store interface {
-	GetDeskBookings(context.Context, int) ([]Booking, error)
+	GetDeskBookings(context.Context, string) ([]Booking, error)
 	AddBooking(context.Context, Booking) error
 	GetAllBookingsForDate(context.Context, time.Time) ([]Booking, error)
 	GetFutureBookingsForUser(context.Context, string) ([]Booking, error)
@@ -66,7 +61,7 @@ type Service struct {
 // Book attempts to create a booking for a user at a for a given time slot.
 // It checks for any issues with the desk's status and for any booking conflicts
 // before creating the booking entry in the store.
-func (svc Service) Book(ctx context.Context, user string, d Desk, slot Slot) (Booking, error) {
+func (svc Service) Book(ctx context.Context, user string, d string, slot Slot) (Booking, error) {
 	ub, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
 		return Booking{}, fmt.Errorf("get bookings for user %q: %w", user, err)
@@ -76,9 +71,9 @@ func (svc Service) Book(ctx context.Context, user string, d Desk, slot Slot) (Bo
 			return Booking{}, errors.New("user already has a booking for this slot")
 		}
 	}
-	bb, err := svc.Store.GetDeskBookings(ctx, d.ID)
+	bb, err := svc.Store.GetDeskBookings(ctx, d)
 	if err != nil {
-		return Booking{}, fmt.Errorf("get bookings for desk %d: %w", d.ID, err)
+		return Booking{}, fmt.Errorf("get bookings for desk %q: %w", d, err)
 	}
 	for _, b := range bb {
 		switch {
@@ -94,7 +89,7 @@ func (svc Service) Book(ctx context.Context, user string, d Desk, slot Slot) (Bo
 		Slot: slot,
 	}
 	if err := svc.Store.AddBooking(ctx, newBooking); err != nil {
-		return Booking{}, fmt.Errorf("add booking for desk %d: %w", d.ID, err)
+		return Booking{}, fmt.Errorf("add booking for desk %q: %w", d, err)
 	}
 	return newBooking, nil
 }
