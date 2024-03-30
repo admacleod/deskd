@@ -46,7 +46,7 @@ func (ui *UI) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("/desks", ui.handleDesks)
 	mux.HandleFunc("POST /book", ui.bookDesk)
 	mux.HandleFunc("/book", ui.showBookingForm)
-	mux.HandleFunc("POST /", ui.deleteBooking)
+	mux.HandleFunc("POST /delete", ui.deleteBooking)
 	mux.HandleFunc("/", ui.showUserBookings)
 }
 

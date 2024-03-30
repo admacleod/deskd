@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
             <td>{{ .Slot.Start.Format "02/01/2006" }}</td>
             <td>{{ .Desk }}</td>
             <td>
-                <form method="POST">
+                <form method="POST" action="/delete">
                     <input type="hidden" name="booking" value={{ .ID }}>
                     <button class="btn btn-danger" type="submit">Cancel</button>
                 </form>
