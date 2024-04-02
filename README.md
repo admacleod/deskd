@@ -1,6 +1,3 @@
-[SPDX-FileCopyrightText: 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>]::
-[SPDX-License-Identifier: AGPL-3.0-only]::
-
 # Desk Booking
 
 This is a fairly simple desk booking system. 

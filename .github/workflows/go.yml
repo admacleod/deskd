@@ -1,5 +1,3 @@
-# SPDX-FileCopyrightText: 2024 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
-# SPDX-License-Identifier: AGPL-3.0-only
 name: Go
 on: [push, pull_request]
 jobs:
