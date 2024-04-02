@@ -14,7 +14,6 @@ For commercial licences please get in touch.
 ## Building
 
 Everything is Go, so you can just use `go build` or `go install` to build binaries.
-Alternatively there is a `Makefile` that contains prepared commands for building production ready binaries.
 
 ## Configuration
 
