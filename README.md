@@ -12,6 +12,12 @@ For commercial licences please get in touch.
 
 Everything is Go, so you can just use `go build` or `go install` to build binaries.
 
+It is now possible (and strongly recommended) to statically build this like so:
+```
+go build -v -tags netgo -ldflags="-s -extldflags=-static" -o deskd
+```
+so that no libraries need to be copied around if running in chroot or scratch containers.
+
 ## Configuration
 
 `deskd` reads its configuration from the same places (in order of precedence):
@@ -50,16 +56,6 @@ The intention is for `deskd` to be run on OpenBSD httpd, the details of how to
 do so are documented below.
 
 ### Configure chroot
-
-Because this is a Go program, and we cannot yet statically compile without CGo on
-OpenBSD with sqlite you will need to add some libraries to the chroot:
-```
-mkdir -p /var/www/usr/lib
-mkdir -p /var/www/usr/libexec
-cp /usr/lib/libc.so.<version> /var/www/usr/lib/
-cp /usr/lib/libpthread.so.<version> /var/www/usr/lib/
-cp /usr/libexec/ld.so /var/www/usr/libexec/
-```
 
 I often tend to create a separate directory for the db to live in, but make sure
 it is writable by the `www` user:
