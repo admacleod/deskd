@@ -87,11 +87,6 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
-	dd, err := ui.DeskSvc.Desks(r.Context())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("list all desks: %v", err), http.StatusInternalServerError)
-		return
-	}
 	bb, err := ui.BookingSvc.Bookings(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
@@ -103,11 +98,9 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 	}
 	data := struct {
 		Bookings map[string]booking.Booking
-		Desks    []string
 		Date     time.Time
 	}{
 		Bookings: bookingMap,
-		Desks:    dd,
 		Date:     date,
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -174,10 +167,8 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, d, err), http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html")
-	if err := ui.tmpl.ExecuteTemplate(w, "bookingSuccess.gohtml", struct{}{}); err != nil {
-		http.Error(w, fmt.Sprintf("execute booking success template: %v", err), http.StatusInternalServerError)
-		return
+	if err := ui.renderUserBookings(r.Context(), w, u, true); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -201,10 +192,8 @@ func (ui *UI) deleteBooking(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("cannot cancel booking: %v", err), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html")
-	if err := ui.tmpl.ExecuteTemplate(w, "cancelSuccess.gohtml", struct{}{}); err != nil {
-		http.Error(w, fmt.Sprintf("execute booking cancel success template: %v", err), http.StatusInternalServerError)
-		return
+	if err := ui.renderUserBookings(r.Context(), w, u, true); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -214,22 +203,29 @@ func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
-	bb, err := ui.BookingSvc.UserBookings(r.Context(), u)
+	if err := ui.renderUserBookings(r.Context(), w, u, false); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (ui *UI) renderUserBookings(ctx context.Context, w http.ResponseWriter, username string, successBanner bool) error {
+	bb, err := ui.BookingSvc.UserBookings(ctx, username)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("list booked desks for user %q: %v", u, err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("list booked desks for user %q: %v", username, err)
 	}
 	sort.Slice(bb, func(i, j int) bool {
 		return bb[i].Slot.Start.Before(bb[j].Slot.Start)
 	})
 	data := struct {
-		Bookings []booking.Booking
+		SuccessBanner bool
+		Bookings      []booking.Booking
 	}{
-		Bookings: bb,
+		SuccessBanner: successBanner,
+		Bookings:      bb,
 	}
 	w.Header().Set("Content-Type", "text/html")
 	if err := ui.tmpl.ExecuteTemplate(w, "userBookings.gohtml", data); err != nil {
-		http.Error(w, fmt.Sprintf("execute user bookings template: %v", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("execute user bookings template: %v", err)
 	}
+	return nil
 }

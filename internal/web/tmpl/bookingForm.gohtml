@@ -1,23 +1,19 @@
 {{ template "header.gohtml" }}
-<h1>Book a Desk for {{ .Date.Format "02/01/2006" }}</h1>
-<div class="row">
-    <div class="col">
-        <form action="/book" method="POST">
-            <input type="hidden" name="day" value={{ .Date.Format "2006-01-02" }}>
-            {{ range .Desks }}
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" id={{ . }} name="desk" value={{ . }}>
-                    <label class="form-check-label" for={{ . }}>{{ . }}</label>
-                </div>
-            {{ else }}
-                <p>Sorry no desks are available for {{ $.Date.Format "02/01/2006" }}.</p>
-            {{ end }}
-            {{ if gt (len .Desks) 0 }}
-                <button class="btn btn-info" type="submit">Book!</button>
-            {{ end }}
-        </form>
-    </div>
-    <div class="col">
-        <img src="/static/floorplan.png" alt="Floor plan">
-    </div>
-</div>
+{{ with .Desks }}
+    <h1>Book a Desk for {{ $.Date.Format "02/01/2006" }}</h1>
+    <!--<img src="/static/floorplan.png" alt="Floor plan">-->
+    <img src="https://placehold.co/600x400" alt="Floor plan">
+    <form action="/book" method="POST">
+        <input type="hidden" name="day" value={{ $.Date.Format "2006-01-02" }}>
+        {{ range . }}
+            <input type="radio" id={{ . }} name="desk" value={{ . }}>
+            <label for={{ . }}>{{ . }}</label>
+            <br />
+        {{ end }}
+        <br />
+        <button type="submit">Book!</button>
+    </form>
+{{ else }}
+    <p>Sorry no desks are available for {{ $.Date.Format "02/01/2006" }}.</p>
+{{ end }}
+{{ template "footer.gohtml" }}

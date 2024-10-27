@@ -1,6 +1,6 @@
 {{ template "header.gohtml" }}
 <h1>Desk Bookings for {{ .Date.Format "02/01/2006" }}</h1>
-<table class="table table-striped table-sm align-middle">
+<table>
     <thead>
     <tr>
         <th>Desk</th>
@@ -8,11 +8,12 @@
     </tr>
     </thead>
     <tbody>
-    {{ range .Desks }}
+    {{ range .Bookings }}
         <tr>
-            <td>{{ . }}</td>
-            <td>{{ with (index $.Bookings .) }}{{ .User }}{{ end }}</td>
+            <td>{{ .Desk }}</td>
+            <td>{{ .User }}</td>
         </tr>
     {{ end }}
     </tbody>
 </table>
+{{ template "footer.gohtml" }}
