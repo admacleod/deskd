@@ -32,7 +32,8 @@ type bookingStore interface {
 }
 
 type Store struct {
-	desks    map[string]struct{}
+	deskMap  map[string]struct{}
+	desks    []string
 	bookings bookingStore
 }
 
@@ -47,12 +48,16 @@ func Open(path string, bookings bookingStore) (_ *Store, err error) {
 		}
 	}()
 	store := &Store{
-		desks:    make(map[string]struct{}),
+		deskMap:  make(map[string]struct{}),
 		bookings: bookings,
 	}
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
-		store.desks[scanner.Text()] = struct{}{}
+		name := scanner.Text()
+		if _, exists := store.deskMap[name]; !exists {
+			store.deskMap[name] = struct{}{}
+			store.desks = append(store.desks, name)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("scanning file: %w", err)
@@ -70,7 +75,7 @@ func (db *Store) AvailableDesks(ctx context.Context, date time.Time) ([]string, 
 		bookedDesks[b.Desk] = struct{}{}
 	}
 	var freeDesks []string
-	for desk := range db.desks {
+	for desk := range db.deskMap {
 		if _, exists := bookedDesks[desk]; !exists {
 			freeDesks = append(freeDesks, desk)
 		}
@@ -79,15 +84,11 @@ func (db *Store) AvailableDesks(ctx context.Context, date time.Time) ([]string, 
 }
 
 func (db *Store) Desks(_ context.Context) ([]string, error) {
-	var ret []string
-	for desk := range db.desks {
-		ret = append(ret, desk)
-	}
-	return ret, nil
+	return db.desks, nil
 }
 
 func (db *Store) Desk(_ context.Context, name string) (string, error) {
-	if _, exists := db.desks[name]; !exists {
+	if _, exists := db.deskMap[name]; !exists {
 		return "", fmt.Errorf("could not find desk %q", name)
 	}
 	return name, nil
