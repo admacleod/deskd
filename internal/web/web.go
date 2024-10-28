@@ -40,8 +40,8 @@ type bookingService interface {
 
 type deskService interface {
 	AvailableDesks(context.Context, time.Time) ([]string, error)
-	Desks(ctx context.Context) ([]string, error)
-	Desk(context.Context, string) (string, error)
+	Desks() []string
+	DeskExists(string) bool
 }
 
 type UI struct {
@@ -152,9 +152,8 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	desk := r.FormValue("desk")
-	d, err := ui.DeskSvc.Desk(r.Context(), desk)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to retrieve desk with ID %q: %v", desk, err), http.StatusInternalServerError)
+	if !ui.DeskSvc.DeskExists(desk) {
+		http.Error(w, fmt.Sprintf("desk with ID %q does not exist", desk), http.StatusInternalServerError)
 		return
 	}
 	u, exists := os.LookupEnv("REMOTE_USER")
@@ -163,8 +162,8 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Using the date for start and end as that is all we really care about here.
-	if _, err := ui.BookingSvc.Book(r.Context(), u, d, booking.Slot{Start: date, End: date.Add(1 * time.Hour)}); err != nil {
-		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, d, err), http.StatusBadRequest)
+	if _, err := ui.BookingSvc.Book(r.Context(), u, desk, booking.Slot{Start: date, End: date.Add(1 * time.Hour)}); err != nil {
+		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, desk, err), http.StatusBadRequest)
 		return
 	}
 	if err := ui.renderUserBookings(r.Context(), w, u, true); err != nil {

@@ -83,13 +83,11 @@ func (db *Store) AvailableDesks(ctx context.Context, date time.Time) ([]string, 
 	return freeDesks, nil
 }
 
-func (db *Store) Desks(_ context.Context) ([]string, error) {
-	return db.desks, nil
+func (db *Store) Desks() []string {
+	return db.desks
 }
 
-func (db *Store) Desk(_ context.Context, name string) (string, error) {
-	if _, exists := db.deskMap[name]; !exists {
-		return "", fmt.Errorf("could not find desk %q", name)
-	}
-	return name, nil
+func (db *Store) DeskExists(name string) bool {
+	_, exists := db.deskMap[name]
+	return exists
 }
