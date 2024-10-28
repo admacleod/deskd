@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/cgi"
 	"os"
+	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/file"
@@ -45,26 +46,25 @@ func main() {
 	flag.StringVar(&deskPath, "desks", envOrDefault("DESKD_DESKS", "desks"), "desk file location")
 	flag.Parse()
 
-	mainCtx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		cancel()
-	}()
-
-	db := &sqlite.Database{}
+	// Ensure DB connects within a second (this is probably way too long for a user).
+	dbCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	db, err := sqlite.Connect(dbCtx, dbPath)
+	if err != nil {
+		log.Printf("Unable to connect to database: %v", err)
+		os.Exit(3)
+	}
+	cancel()
 	defer func() {
 		if err := db.Close(); err != nil {
 			log.Printf("Unable to close database connection: %v", err)
 			os.Exit(3)
 		}
 	}()
-	if err := db.Connect(mainCtx, dbPath); err != nil {
-		log.Printf("Unable to connect to database: %v", err)
-		os.Exit(3)
-	}
 
 	deskStore, err := file.Open(deskPath)
 	if err != nil {
 		log.Printf("Unable to open desk file: %v", err)
+		os.Exit(2)
 	}
 
 	bookingSvc := booking.Service{
