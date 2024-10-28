@@ -65,24 +65,6 @@ func Open(path string, bookings bookingStore) (_ *Store, err error) {
 	return store, nil
 }
 
-func (db *Store) AvailableDesks(ctx context.Context, date time.Time) ([]string, error) {
-	bb, err := db.bookings.GetAllBookingsForDate(ctx, date)
-	if err != nil {
-		return nil, fmt.Errorf("get bookings: %w", err)
-	}
-	bookedDesks := make(map[string]struct{})
-	for _, b := range bb {
-		bookedDesks[b.Desk] = struct{}{}
-	}
-	var freeDesks []string
-	for desk := range db.deskMap {
-		if _, exists := bookedDesks[desk]; !exists {
-			freeDesks = append(freeDesks, desk)
-		}
-	}
-	return freeDesks, nil
-}
-
 func (db *Store) Desks() []string {
 	return db.desks
 }

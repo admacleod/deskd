@@ -68,8 +68,13 @@ type Store interface {
 	DeleteBooking(context.Context, ID) error
 }
 
+type Desks interface {
+	Desks() []string
+}
+
 type Service struct {
 	Store Store
+	Desks Desks
 }
 
 // Book attempts to create a booking for a user at a for a given time slot.
@@ -141,4 +146,22 @@ func (svc Service) CancelBooking(ctx context.Context, id ID, user string) error 
 		return errors.New("booking not found for user")
 	}
 	return svc.Store.DeleteBooking(ctx, id)
+}
+
+func (svc Service) AvailableDesks(ctx context.Context, date time.Time) ([]string, error) {
+	bb, err := svc.Store.GetAllBookingsForDate(ctx, date)
+	if err != nil {
+		return nil, fmt.Errorf("get bookings: %w", err)
+	}
+	bookedDesks := make(map[string]struct{})
+	for _, b := range bb {
+		bookedDesks[b.Desk] = struct{}{}
+	}
+	var freeDesks []string
+	for _, desk := range svc.Desks.Desks() {
+		if _, exists := bookedDesks[desk]; !exists {
+			freeDesks = append(freeDesks, desk)
+		}
+	}
+	return freeDesks, nil
 }

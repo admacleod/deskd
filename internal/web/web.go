@@ -32,6 +32,7 @@ import (
 )
 
 type bookingService interface {
+	AvailableDesks(context.Context, time.Time) ([]string, error)
 	Book(context.Context, string, string, booking.Slot) (booking.Booking, error)
 	Bookings(context.Context, time.Time) ([]booking.Booking, error)
 	UserBookings(context.Context, string) ([]booking.Booking, error)
@@ -39,7 +40,6 @@ type bookingService interface {
 }
 
 type deskService interface {
-	AvailableDesks(context.Context, time.Time) ([]string, error)
 	Desks() []string
 	DeskExists(string) bool
 }
@@ -125,7 +125,7 @@ func (ui *UI) showBookingForm(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
-	dd, err := ui.DeskSvc.AvailableDesks(r.Context(), date)
+	dd, err := ui.BookingSvc.AvailableDesks(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
