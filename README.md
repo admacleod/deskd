@@ -27,10 +27,10 @@ so that no libraries need to be copied around if running in chroot or scratch co
 
 The configuration options are as follows:
 
-| Flag     | Env           | Type      | Default     | Description               |
-|----------|---------------|-----------|-------------|---------------------------|
-| `-db`    | `DESKD_DB`    | `string`  | `"test.db"` | Location of the database  |
-| `-desks` | `DESKD_DESKS` | `string`  | `"desks"`   | Location of the desk file |
+| Flag     | Env           | Type      | Default      | Description               |
+|----------|---------------|-----------|--------------|---------------------------|
+| `-db`    | `DESKD_DB`    | `string`  | `"deskd.db"` | Location of the database  |
+| `-desks` | `DESKD_DESKS` | `string`  | `"desks"`    | Location of the desk file |
 
 ### Desk File
 

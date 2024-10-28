@@ -41,7 +41,7 @@ func envOrDefault(env, defaultValue string) string {
 
 func main() {
 	var dbPath, deskPath string
-	flag.StringVar(&dbPath, "db", envOrDefault("DESKD_DB", "test.db"), "database location")
+	flag.StringVar(&dbPath, "db", envOrDefault("DESKD_DB", "deskd.db"), "database location")
 	flag.StringVar(&deskPath, "desks", envOrDefault("DESKD_DESKS", "desks"), "desk file location")
 	flag.Parse()
 
