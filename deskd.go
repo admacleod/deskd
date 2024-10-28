@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/admacleod/deskd/internal/store"
 	"log"
 	"net/http"
 	"net/http/cgi"
@@ -27,8 +28,6 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/file"
-	"github.com/admacleod/deskd/internal/sqlite"
 	"github.com/admacleod/deskd/internal/web"
 )
 
@@ -48,7 +47,7 @@ func main() {
 
 	// Ensure DB connects within a second (this is probably way too long for a user).
 	dbCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-	db, err := sqlite.Connect(dbCtx, dbPath)
+	db, err := store.OpenBookingDatabase(dbCtx, dbPath)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v", err)
 		os.Exit(3)
@@ -61,7 +60,7 @@ func main() {
 		}
 	}()
 
-	deskStore, err := file.Open(deskPath)
+	deskStore, err := store.OpenDeskConfig(deskPath)
 	if err != nil {
 		log.Printf("Unable to open desk file: %v", err)
 		os.Exit(2)

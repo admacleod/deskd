@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with deskd. If not, see <https://www.gnu.org/licenses/>.
 
-package file
+package store
 
 import (
 	"bufio"
@@ -23,12 +23,12 @@ import (
 	"os"
 )
 
-type Store struct {
+type Desks struct {
 	deskMap map[string]struct{}
 	desks   []string
 }
 
-func Open(path string) (_ *Store, err error) {
+func OpenDeskConfig(path string) (_ *Desks, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening file %q: %w", path, err)
@@ -38,7 +38,7 @@ func Open(path string) (_ *Store, err error) {
 			err = fmt.Errorf("closing file %q: %w", path, closeErr)
 		}
 	}()
-	store := &Store{
+	store := &Desks{
 		deskMap: make(map[string]struct{}),
 	}
 	scanner := bufio.NewScanner(f)
@@ -55,11 +55,11 @@ func Open(path string) (_ *Store, err error) {
 	return store, nil
 }
 
-func (db *Store) Desks() []string {
-	return db.desks
+func (store *Desks) Desks() []string {
+	return store.desks
 }
 
-func (db *Store) DeskExists(name string) bool {
-	_, exists := db.deskMap[name]
+func (store *Desks) DeskExists(name string) bool {
+	_, exists := store.deskMap[name]
 	return exists
 }

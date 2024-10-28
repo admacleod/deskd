@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with deskd. If not, see <https://www.gnu.org/licenses/>.
 
-package sqlite
+package store
 
 import (
 	"context"
@@ -30,8 +30,6 @@ import (
 	"github.com/admacleod/deskd/internal/booking"
 )
 
-var _ booking.Store = &Database{}
-
 const schema = `
 CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,11 +40,11 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 `
 
-type Database struct {
-	conn *sql.DB
+type Bookings struct {
+	db *sql.DB
 }
 
-func Connect(ctx context.Context, filename string) (*Database, error) {
+func OpenBookingDatabase(ctx context.Context, filename string) (*Bookings, error) {
 	info, err := os.Stat(filename)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -68,13 +66,13 @@ func Connect(ctx context.Context, filename string) (*Database, error) {
 	if _, err := conn.ExecContext(ctx, schema); err != nil {
 		return nil, fmt.Errorf("execute schema: %w", err)
 	}
-	return &Database{
-		conn: conn,
+	return &Bookings{
+		db: conn,
 	}, nil
 }
 
-func (db *Database) Close() error {
-	return db.conn.Close()
+func (store *Bookings) Close() error {
+	return store.db.Close()
 }
 
 const (
@@ -85,8 +83,8 @@ const (
 	queryDeleteBookingByID          = `DELETE FROM bookings WHERE id = ?`
 )
 
-func (db *Database) GetDeskBookings(ctx context.Context, desk string) (_ []booking.Booking, err error) {
-	rows, err := db.conn.QueryContext(ctx, querySelectBookingsByDesk, desk)
+func (store *Bookings) GetDeskBookings(ctx context.Context, desk string) (_ []booking.Booking, err error) {
+	rows, err := store.db.QueryContext(ctx, querySelectBookingsByDesk, desk)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 	case err != nil:
@@ -108,15 +106,15 @@ func (db *Database) GetDeskBookings(ctx context.Context, desk string) (_ []booki
 	return ret, nil
 }
 
-func (db *Database) AddBooking(ctx context.Context, b booking.Booking) error {
-	if _, err := db.conn.ExecContext(ctx, queryInsertBooking, b.User, b.Desk, b.Slot.Start, b.Slot.End); err != nil {
+func (store *Bookings) AddBooking(ctx context.Context, b booking.Booking) error {
+	if _, err := store.db.ExecContext(ctx, queryInsertBooking, b.User, b.Desk, b.Slot.Start, b.Slot.End); err != nil {
 		return fmt.Errorf("insert booking into database: %w", err)
 	}
 	return nil
 }
 
-func (db *Database) GetAllBookingsForDate(ctx context.Context, date time.Time) ([]booking.Booking, error) {
-	rows, err := db.conn.QueryContext(ctx, querySelectBookingsByDate, date)
+func (store *Bookings) GetAllBookingsForDate(ctx context.Context, date time.Time) ([]booking.Booking, error) {
+	rows, err := store.db.QueryContext(ctx, querySelectBookingsByDate, date)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 	case err != nil:
@@ -138,8 +136,8 @@ func (db *Database) GetAllBookingsForDate(ctx context.Context, date time.Time) (
 	return ret, nil
 }
 
-func (db *Database) GetFutureBookingsForUser(ctx context.Context, user string) ([]booking.Booking, error) {
-	rows, err := db.conn.QueryContext(ctx, querySelectFutureBookingsByUser, user)
+func (store *Bookings) GetFutureBookingsForUser(ctx context.Context, user string) ([]booking.Booking, error) {
+	rows, err := store.db.QueryContext(ctx, querySelectFutureBookingsByUser, user)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 	case err != nil:
@@ -161,8 +159,8 @@ func (db *Database) GetFutureBookingsForUser(ctx context.Context, user string) (
 	return ret, nil
 }
 
-func (db *Database) DeleteBooking(ctx context.Context, id booking.ID) error {
-	if _, err := db.conn.ExecContext(ctx, queryDeleteBookingByID, id); err != nil {
+func (store *Bookings) DeleteBooking(ctx context.Context, id booking.ID) error {
+	if _, err := store.db.ExecContext(ctx, queryDeleteBookingByID, id); err != nil {
 		return fmt.Errorf("delete booking %d from database: %w", id, err)
 	}
 	return nil
