@@ -39,15 +39,9 @@ type bookingService interface {
 	CancelBooking(context.Context, booking.ID, string) error
 }
 
-type deskService interface {
-	Desks() []string
-	DeskExists(string) bool
-}
-
 type UI struct {
 	tmpl       *template.Template
 	BookingSvc bookingService
-	DeskSvc    deskService
 }
 
 //go:embed tmpl/*
@@ -152,10 +146,6 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	desk := r.FormValue("desk")
-	if !ui.DeskSvc.DeskExists(desk) {
-		http.Error(w, fmt.Sprintf("desk with ID %q does not exist", desk), http.StatusInternalServerError)
-		return
-	}
 	u, exists := os.LookupEnv("REMOTE_USER")
 	if !exists {
 		http.Error(w, "no user found", http.StatusUnauthorized)

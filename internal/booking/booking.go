@@ -70,6 +70,7 @@ type Store interface {
 
 type Desks interface {
 	Desks() []string
+	DeskExists(string) bool
 }
 
 type Service struct {
@@ -80,7 +81,10 @@ type Service struct {
 // Book attempts to create a booking for a user at a for a given time slot.
 // It checks for any issues with the desk's status and for any booking conflicts
 // before creating the booking entry in the store.
-func (svc Service) Book(ctx context.Context, user string, d string, slot Slot) (Booking, error) {
+func (svc Service) Book(ctx context.Context, user string, desk string, slot Slot) (Booking, error) {
+	if !svc.Desks.DeskExists(desk) {
+		return Booking{}, fmt.Errorf("desk with ID %q does not exist", desk)
+	}
 	ub, err := svc.Store.GetFutureBookingsForUser(ctx, user)
 	if err != nil {
 		return Booking{}, fmt.Errorf("get bookings for user %q: %w", user, err)
@@ -90,25 +94,25 @@ func (svc Service) Book(ctx context.Context, user string, d string, slot Slot) (
 			return Booking{}, errors.New("user already has a booking for this slot")
 		}
 	}
-	bb, err := svc.Store.GetDeskBookings(ctx, d)
+	bb, err := svc.Store.GetDeskBookings(ctx, desk)
 	if err != nil {
-		return Booking{}, fmt.Errorf("get bookings for desk %q: %w", d, err)
+		return Booking{}, fmt.Errorf("get bookings for desk %q: %w", desk, err)
 	}
 	for _, b := range bb {
 		switch {
 		case b.Slot.End.Before(slot.Start):
 		case b.Slot.Start.After(slot.End):
 		default:
-			return Booking{}, AlreadyBookedError{Desk: d, Slot: b.Slot}
+			return Booking{}, AlreadyBookedError{Desk: desk, Slot: b.Slot}
 		}
 	}
 	newBooking := Booking{
 		User: user,
-		Desk: d,
+		Desk: desk,
 		Slot: slot,
 	}
 	if err := svc.Store.AddBooking(ctx, newBooking); err != nil {
-		return Booking{}, fmt.Errorf("add booking for desk %q: %w", d, err)
+		return Booking{}, fmt.Errorf("add booking for desk %q: %w", desk, err)
 	}
 	return newBooking, nil
 }

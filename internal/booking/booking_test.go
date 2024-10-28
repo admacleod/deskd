@@ -56,6 +56,16 @@ func (t *testDB) AddBooking(_ context.Context, b booking.Booking) error {
 	return t.err
 }
 
+type testDesks struct{}
+
+func (t testDesks) Desks() []string {
+	return nil
+}
+
+func (t testDesks) DeskExists(s string) bool {
+	return true
+}
+
 func TestBookDesk(t *testing.T) {
 	testNow := time.Now()
 	testAdd1H := testNow.Add(1 * time.Hour)
@@ -66,6 +76,7 @@ func TestBookDesk(t *testing.T) {
 	testErr := errors.New("test")
 	tests := map[string]struct {
 		db     testDB
+		desks  testDesks
 		user   string
 		desk   string
 		slot   booking.Slot
@@ -195,7 +206,7 @@ func TestBookDesk(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			svc := booking.Service{Store: &test.db}
+			svc := booking.Service{Store: &test.db, Desks: test.desks}
 			actual, err := svc.Book(context.Background(), test.user, test.desk, test.slot)
 			switch {
 			case test.err == nil:

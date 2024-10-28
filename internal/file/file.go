@@ -19,25 +19,16 @@ package file
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
-	"time"
-
-	"github.com/admacleod/deskd/internal/booking"
 )
 
-type bookingStore interface {
-	GetAllBookingsForDate(context.Context, time.Time) ([]booking.Booking, error)
-}
-
 type Store struct {
-	deskMap  map[string]struct{}
-	desks    []string
-	bookings bookingStore
+	deskMap map[string]struct{}
+	desks   []string
 }
 
-func Open(path string, bookings bookingStore) (_ *Store, err error) {
+func Open(path string) (_ *Store, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening file %q: %w", path, err)
@@ -48,8 +39,7 @@ func Open(path string, bookings bookingStore) (_ *Store, err error) {
 		}
 	}()
 	store := &Store{
-		deskMap:  make(map[string]struct{}),
-		bookings: bookings,
+		deskMap: make(map[string]struct{}),
 	}
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

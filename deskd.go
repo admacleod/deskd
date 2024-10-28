@@ -62,18 +62,18 @@ func main() {
 		os.Exit(3)
 	}
 
-	deskStore, err := file.Open(deskPath, db)
+	deskStore, err := file.Open(deskPath)
 	if err != nil {
 		log.Printf("Unable to open desk file: %v", err)
 	}
 
 	bookingSvc := booking.Service{
 		Store: db,
+		Desks: deskStore,
 	}
 
 	webUI := web.UI{
 		BookingSvc: bookingSvc,
-		DeskSvc:    deskStore,
 	}
 
 	mux := http.NewServeMux()
