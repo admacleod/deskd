@@ -34,7 +34,7 @@ import (
 type bookingService interface {
 	AvailableDesks(context.Context, time.Time) ([]string, error)
 	Book(context.Context, string, string, booking.Slot) (booking.Booking, error)
-	Bookings(context.Context, time.Time) ([]booking.Booking, error)
+	Bookings(context.Context, time.Time) (map[string]booking.Booking, error)
 	UserBookings(context.Context, string) ([]booking.Booking, error)
 	CancelBooking(context.Context, booking.ID, string) error
 }
@@ -81,14 +81,10 @@ func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
-	bb, err := ui.BookingSvc.Bookings(r.Context(), date)
+	bookingMap, err := ui.BookingSvc.Bookings(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
-	}
-	bookingMap := make(map[string]booking.Booking)
-	for _, b := range bb {
-		bookingMap[b.Desk] = b
 	}
 	data := struct {
 		Bookings map[string]booking.Booking

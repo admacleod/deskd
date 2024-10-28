@@ -117,12 +117,16 @@ func (svc Service) Book(ctx context.Context, user string, desk string, slot Slot
 	return newBooking, nil
 }
 
-func (svc Service) Bookings(ctx context.Context, date time.Time) ([]Booking, error) {
+func (svc Service) Bookings(ctx context.Context, date time.Time) (map[string]Booking, error) {
 	bb, err := svc.Store.GetAllBookingsForDate(ctx, date)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve all bookings for date %q from store: %w", date, err)
 	}
-	return bb, nil
+	bookingMap := make(map[string]Booking)
+	for _, b := range bb {
+		bookingMap[b.Desk] = b
+	}
+	return bookingMap, nil
 }
 
 func (svc Service) UserBookings(ctx context.Context, user string) ([]Booking, error) {
