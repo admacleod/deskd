@@ -51,15 +51,6 @@ func (err AlreadyBookedError) Error() string {
 	return fmt.Sprintf("desk with ID %q already booked between %q and %q: %v", err.Desk, err.Slot.Start, err.Slot.End, err.Err)
 }
 
-type UnbookableDeskError struct {
-	Desk   int
-	Status int
-}
-
-func (err UnbookableDeskError) Error() string {
-	return fmt.Sprintf("desk with ID %d is not able to be booked", err.Desk)
-}
-
 type Store interface {
 	GetDeskBookings(context.Context, string) ([]Booking, error)
 	AddBooking(context.Context, Booking) error
