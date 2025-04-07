@@ -20,7 +20,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/admacleod/deskd/internal/store"
 	"log"
 	"net/http"
 	"net/http/cgi"
@@ -28,6 +27,7 @@ import (
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
+	"github.com/admacleod/deskd/internal/store"
 	"github.com/admacleod/deskd/internal/web"
 )
 

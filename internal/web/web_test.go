@@ -19,7 +19,6 @@ package web_test
 
 import (
 	"embed"
-	"github.com/admacleod/deskd/internal/booking"
 	"html/template"
 	"io/fs"
 	"os"
@@ -27,6 +26,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/admacleod/deskd/internal/booking"
 )
 
 //go:embed tmpl/*
