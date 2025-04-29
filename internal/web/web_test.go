@@ -55,21 +55,13 @@ func TestTemplates(t *testing.T) {
 			"render": map[string]any{
 				"Date": time.Now(),
 			},
-			"desks": map[string]any{
-				"Date":  time.Now(),
-				"Desks": []string{"foo", "bar", "baz"},
-			},
-		},
-		"bookings.gohtml": {
-			"render": map[string]any{
-				"Date": time.Now(),
-			},
 			"bookings": map[string]any{
 				"Date": time.Now(),
 				"Bookings": map[string]booking.Booking{
 					"foo": {ID: 123, Desk: "foo", User: "bar"},
 					"baz": {ID: 123, Desk: "baz", User: "qux"},
 				},
+				"Desks": []string{"foo", "bar", "baz"},
 			},
 		},
 		"dateSelectForm.gohtml": {"render": nil},

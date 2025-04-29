@@ -51,7 +51,6 @@ func (ui *UI) RegisterHandlers(mux *http.ServeMux) {
 	ui.tmpl = template.Must(template.ParseFS(templateFS, "tmpl/*"))
 
 	mux.HandleFunc("/about", ui.handleAbout)
-	mux.HandleFunc("/desks", ui.handleDesks)
 	mux.HandleFunc("POST /book", ui.bookDesk)
 	mux.HandleFunc("/book", ui.showBookingForm)
 	mux.HandleFunc("POST /delete", ui.deleteBooking)
@@ -62,40 +61,6 @@ func (ui *UI) handleAbout(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	if err := ui.tmpl.ExecuteTemplate(w, "about.gohtml", nil); err != nil {
 		http.Error(w, fmt.Sprintf("execute about template: %v", err), http.StatusInternalServerError)
-		return
-	}
-}
-
-func (ui *UI) handleDesks(w http.ResponseWriter, r *http.Request) {
-	day := r.URL.Query().Get("day")
-	if day == "" {
-		w.Header().Set("Content-Type", "text/html")
-		if err := ui.tmpl.ExecuteTemplate(w, "dateSelectForm.gohtml", nil); err != nil {
-			http.Error(w, fmt.Sprintf("execute date select template: %v", err), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-	date, err := time.Parse("2006-01-02", day)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
-		return
-	}
-	bookingMap, err := ui.BookingSvc.Bookings(r.Context(), date)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
-		return
-	}
-	data := struct {
-		Bookings map[string]booking.Booking
-		Date     time.Time
-	}{
-		Bookings: bookingMap,
-		Date:     date,
-	}
-	w.Header().Set("Content-Type", "text/html")
-	if err := ui.tmpl.ExecuteTemplate(w, "bookings.gohtml", data); err != nil {
-		http.Error(w, fmt.Sprintf("execute bookings template: %v", err), http.StatusInternalServerError)
 		return
 	}
 }
@@ -115,17 +80,24 @@ func (ui *UI) showBookingForm(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
+	bookingMap, err := ui.BookingSvc.Bookings(r.Context(), date)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("list booked desks for day %q: %v", day, err), http.StatusInternalServerError)
+		return
+	}
 	dd, err := ui.BookingSvc.AvailableDesks(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
 	}
 	data := struct {
-		Date  time.Time
-		Desks []string
+		Date     time.Time
+		Bookings map[string]booking.Booking
+		Desks    []string
 	}{
-		Date:  date,
-		Desks: dd,
+		Date:     date,
+		Bookings: bookingMap,
+		Desks:    dd,
 	}
 	w.Header().Set("Content-Type", "text/html")
 	if err := ui.tmpl.ExecuteTemplate(w, "bookingForm.gohtml", data); err != nil {
