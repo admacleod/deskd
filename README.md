@@ -14,7 +14,7 @@ Everything is Go, so you can just use `go build` or `go install` to build binari
 
 It is now possible (and strongly recommended) to statically build this like so:
 ```
-go build -v -tags netgo -ldflags="-s -extldflags=-static" -o deskd
+CGO_ENABLED=1 go build -ldflags '-s -w -linkmode external -extldflags "-fno-PIC -static"' -o deskd
 ```
 so that no libraries need to be copied around if running in chroot or scratch containers.
 
@@ -27,28 +27,15 @@ so that no libraries need to be copied around if running in chroot or scratch co
 
 The configuration options are as follows:
 
-| Flag     | Env           | Type      | Default      | Description               |
-|----------|---------------|-----------|--------------|---------------------------|
-| `-db`    | `DESKD_DB`    | `string`  | `"deskd.db"` | Location of the database  |
-| `-desks` | `DESKD_DESKS` | `string`  | `"desks"`    | Location of the desk file |
+| Flag     | Env           | Type      | Default      | Description                        |
+|----------|---------------|-----------|--------------|------------------------------------|
+| `-db`    | `DESKD_DB`    | `string`  | `"db/deskd"` | Location of the database directory |
 
-### Desk File
+### Adding desks
 
-The desk file is used to define desks available for bookings.
-
-It should be a single file with desk names defined, one per line.
-
-Example:
-```
-FE1
-FE2
-# Comments don't work, this is now a bookable desk name.
-FE3
-SS1
-```
-
-**Warning:** removing a desk from the file does not remove associated bookings
-from the database.
+As `deskd` uses a the filesystem to store bookings you can add and remove bookable desks by
+adding and removing directories with the names of the desks from the top level of the database
+directory.
 
 ## Deployment
 
@@ -103,8 +90,7 @@ server "deskd.example.com" {
 	location "*" {
 		fastcgi {
 			param SCRIPT_FILENAME "/cgi-bin/deskd"
-			param DESKD_DB "/db/deskd.db"
-			param DESKD_DESKS "/db/desks"
+			param DESKD_DB "/db/deskd"
 		}
 	}
 }

@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
@@ -33,10 +32,69 @@ import (
 
 type bookingService interface {
 	AvailableDesks(context.Context, time.Time) ([]string, error)
-	Book(context.Context, string, string, booking.Slot) (booking.Booking, error)
-	Bookings(context.Context, time.Time) (map[string]booking.Booking, error)
+	Book(context.Context, string, string, time.Time) (booking.Booking, error)
+	Bookings(context.Context, time.Time) ([]booking.Booking, error)
 	UserBookings(context.Context, string) ([]booking.Booking, error)
-	CancelBooking(context.Context, booking.ID, string) error
+	CancelBooking(context.Context, string, string, time.Time) error
+}
+
+// naturalSort provides a sort function for "natural" sorting.
+// This is primarily for sorting lists of desk names where the desk
+// name may contain numeric or symbolic characters as well as
+// alphabetic ones.
+func naturalSort(a, b string) bool {
+	aLen, bLen := len(a), len(b)
+	i, j := 0, 0
+
+	for i < aLen && j < bLen {
+		// Handle end of strings
+		if i == aLen || j == bLen {
+			return i == aLen && j < bLen
+		}
+
+		// If both characters are digits, compare numbers
+		if isDigit(a[i]) && isDigit(b[j]) {
+			// Extract and compare numbers
+			numA, lenA := getNumber(a[i:])
+			numB, lenB := getNumber(b[j:])
+
+			if numA != numB {
+				return numA < numB
+			}
+
+			i += lenA
+			j += lenB
+			continue
+		}
+
+		// Compare non-digit characters
+		if a[i] != b[j] {
+			return a[i] < b[j]
+		}
+
+		i++
+		j++
+	}
+
+	// If one string is prefix of another, shorter comes first
+	return aLen < bLen
+}
+
+// isDigit returns true if the character is a digit
+func isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+// getNumber extracts a number from the start of string
+// Returns the number and how many characters were processed
+func getNumber(s string) (int, int) {
+	num := 0
+	i := 0
+	for i < len(s) && isDigit(s[i]) {
+		num = num*10 + int(s[i]-'0')
+		i++
+	}
+	return num, i
 }
 
 type UI struct {
@@ -53,7 +111,7 @@ func (ui *UI) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("/about", ui.handleAbout)
 	mux.HandleFunc("POST /book", ui.bookDesk)
 	mux.HandleFunc("/book", ui.showBookingForm)
-	mux.HandleFunc("POST /delete", ui.deleteBooking)
+	mux.HandleFunc("POST /cancel", ui.cancelBooking)
 	mux.HandleFunc("/", ui.showUserBookings)
 }
 
@@ -80,23 +138,29 @@ func (ui *UI) showBookingForm(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
-	bookingMap, err := ui.BookingSvc.Bookings(r.Context(), date)
+	bb, err := ui.BookingSvc.Bookings(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list booked desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
 	}
+	sort.Slice(bb, func(i, j int) bool {
+		return naturalSort(bb[i].Desk, bb[j].Desk)
+	})
 	dd, err := ui.BookingSvc.AvailableDesks(r.Context(), date)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("list available desks for day %q: %v", day, err), http.StatusInternalServerError)
 		return
 	}
+	sort.Slice(dd, func(i, j int) bool {
+		return naturalSort(dd[i], dd[j])
+	})
 	data := struct {
 		Date     time.Time
-		Bookings map[string]booking.Booking
+		Bookings []booking.Booking
 		Desks    []string
 	}{
 		Date:     date,
-		Bookings: bookingMap,
+		Bookings: bb,
 		Desks:    dd,
 	}
 	w.Header().Set("Content-Type", "text/html")
@@ -119,70 +183,54 @@ func (ui *UI) bookDesk(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
-	// Using the date for start and end as that is all we really care about here.
-	if _, err := ui.BookingSvc.Book(r.Context(), u, desk, booking.Slot{Start: date, End: date.Add(1 * time.Hour)}); err != nil {
+	if _, err := ui.BookingSvc.Book(r.Context(), u, desk, date); err != nil {
 		http.Error(w, fmt.Sprintf("unable to book slot for %q at desk %q: %v", day, desk, err), http.StatusBadRequest)
 		return
 	}
-	if err := ui.renderUserBookings(r.Context(), w, u, true); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (ui *UI) deleteBooking(w http.ResponseWriter, r *http.Request) {
-	bID := r.FormValue("booking")
-	if bID == "" {
-		http.Error(w, "missing booking ID", http.StatusBadRequest)
-		return
-	}
-	bookingID, err := strconv.Atoi(bID)
+func (ui *UI) cancelBooking(w http.ResponseWriter, r *http.Request) {
+	day := r.FormValue("day")
+	date, err := time.Parse("2006-01-02", day)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("invalid booking ID %q: %v", bID, err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("unable to parse day %q: %v", day, err), http.StatusBadRequest)
 		return
 	}
+	desk := r.FormValue("desk")
 	u, exists := os.LookupEnv("REMOTE_USER")
 	if !exists {
 		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
-	if err := ui.BookingSvc.CancelBooking(r.Context(), booking.ID(bookingID), u); err != nil {
+	if err := ui.BookingSvc.CancelBooking(r.Context(), u, desk, date); err != nil {
 		http.Error(w, fmt.Sprintf("cannot cancel booking: %v", err), http.StatusInternalServerError)
 		return
 	}
-	if err := ui.renderUserBookings(r.Context(), w, u, true); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (ui *UI) showUserBookings(w http.ResponseWriter, r *http.Request) {
-	u, exists := os.LookupEnv("REMOTE_USER")
+	username, exists := os.LookupEnv("REMOTE_USER")
 	if !exists {
 		http.Error(w, "no user found", http.StatusUnauthorized)
 		return
 	}
-	if err := ui.renderUserBookings(r.Context(), w, u, false); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func (ui *UI) renderUserBookings(ctx context.Context, w http.ResponseWriter, username string, successBanner bool) error {
-	bb, err := ui.BookingSvc.UserBookings(ctx, username)
+	bb, err := ui.BookingSvc.UserBookings(r.Context(), username)
 	if err != nil {
-		return fmt.Errorf("list booked desks for user %q: %v", username, err)
+		http.Error(w, fmt.Sprintf("cannot get bookings for user %q: %v", username, err), http.StatusInternalServerError)
+		return
 	}
 	sort.Slice(bb, func(i, j int) bool {
-		return bb[i].Slot.Start.Before(bb[j].Slot.Start)
+		return bb[i].Date.Before(bb[j].Date)
 	})
 	data := struct {
-		SuccessBanner bool
-		Bookings      []booking.Booking
+		Bookings []booking.Booking
 	}{
-		SuccessBanner: successBanner,
-		Bookings:      bb,
+		Bookings: bb,
 	}
 	w.Header().Set("Content-Type", "text/html")
 	if err := ui.tmpl.ExecuteTemplate(w, "userBookings.gohtml", data); err != nil {
-		return fmt.Errorf("execute user bookings template: %v", err)
+		http.Error(w, fmt.Sprintf("cannot render user bookings: %v", err), http.StatusInternalServerError)
 	}
-	return nil
 }

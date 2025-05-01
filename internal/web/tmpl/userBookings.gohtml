@@ -1,7 +1,4 @@
 {{ template "header.gohtml" }}
-<dialog {{ if .SuccessBanner }}open{{ end }}>
-    Success!
-</dialog>
 {{ with .Bookings }}
 <h1>Your Upcoming Bookings</h1>
 <table>
@@ -15,11 +12,12 @@
     <tbody>
     {{ range . }}
         <tr>
-            <td>{{ .Slot.Start.Format "02/01/2006" }}</td>
+            <td>{{ .Date.Format "02/01/2006" }}</td>
             <td>{{ .Desk }}</td>
             <td style="text-align: center">
-                <form method="POST" action="/delete">
-                    <input type="hidden" name="booking" value={{ .ID }}>
+                <form method="POST" action="/cancel">
+                    <input type="hidden" name="desk" value={{ .Desk }}>
+                    <input type="hidden" name="day" value={{ .Date.Format "2006-01-02" }}>
                     <button type="submit">Cancel</button>
                 </form>
             </td>

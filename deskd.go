@@ -18,16 +18,13 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 	"net/http"
 	"net/http/cgi"
 	"os"
-	"time"
 
 	"github.com/admacleod/deskd/internal/booking"
-	"github.com/admacleod/deskd/internal/store"
 	"github.com/admacleod/deskd/internal/web"
 )
 
@@ -40,39 +37,19 @@ func envOrDefault(env, defaultValue string) string {
 }
 
 func main() {
-	var dbPath, deskPath string
-	flag.StringVar(&dbPath, "db", envOrDefault("DESKD_DB", "deskd.db"), "database location")
-	flag.StringVar(&deskPath, "desks", envOrDefault("DESKD_DESKS", "desks"), "desk file location")
+	var dbPath string
+	flag.StringVar(&dbPath, "db", envOrDefault("DESKD_DB", "db/deskd"), "database location")
 	flag.Parse()
 
-	// Ensure DB connects within a second (this is probably way too long for a user).
-	dbCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-	db, err := store.OpenBookingDatabase(dbCtx, dbPath)
-	if err != nil {
-		log.Printf("Unable to connect to database: %v", err)
+	if err := os.MkdirAll(dbPath, os.ModePerm); err != nil {
+		log.Printf("Unable to create database directory: %v", err)
 		os.Exit(3)
 	}
-	cancel()
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("Unable to close database connection: %v", err)
-			os.Exit(3)
-		}
-	}()
 
-	deskStore, err := store.OpenDeskConfig(deskPath)
-	if err != nil {
-		log.Printf("Unable to open desk file: %v", err)
-		os.Exit(2)
-	}
-
-	bookingSvc := booking.Service{
-		Store: db,
-		Desks: deskStore,
-	}
+	fs := booking.NewFileStore(dbPath)
 
 	webUI := web.UI{
-		BookingSvc: bookingSvc,
+		BookingSvc: fs,
 	}
 
 	mux := http.NewServeMux()

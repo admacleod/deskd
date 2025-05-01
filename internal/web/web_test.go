@@ -58,8 +58,8 @@ func TestTemplates(t *testing.T) {
 			"bookings": map[string]any{
 				"Date": time.Now(),
 				"Bookings": map[string]booking.Booking{
-					"foo": {ID: 123, Desk: "foo", User: "bar"},
-					"baz": {ID: 123, Desk: "baz", User: "qux"},
+					"foo": {Desk: "foo", User: "bar"},
+					"baz": {Desk: "baz", User: "qux"},
 				},
 				"Desks": []string{"foo", "bar", "baz"},
 			},
@@ -69,8 +69,8 @@ func TestTemplates(t *testing.T) {
 			"no-bookings": nil,
 			"bookings": map[string]any{
 				"Bookings": []booking.Booking{
-					{ID: 123, User: "foo", Desk: "bar", Slot: booking.Slot{Start: time.Now()}},
-					{ID: 456, User: "baz", Desk: "qux", Slot: booking.Slot{End: time.Now()}},
+					{User: "foo", Desk: "bar", Date: time.Now()},
+					{User: "baz", Desk: "qux", Date: time.Now()},
 				},
 			},
 			"success": map[string]any{
