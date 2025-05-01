@@ -104,6 +104,7 @@ server "deskd.example.com" {
 		fastcgi {
 			param SCRIPT_FILENAME "/cgi-bin/deskd"
 			param DESKD_DB "/db/deskd.db"
+			param DESKD_DESKS "/db/desks"
 		}
 	}
 }
