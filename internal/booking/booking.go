@@ -41,5 +41,5 @@ func (err alreadyBookedError) Unwrap() error {
 }
 
 func (err alreadyBookedError) Error() string {
-	return fmt.Sprintf("desk with ID %q already booked on %q", err.Desk, err.Date)
+	return fmt.Sprintf("desk with ID %q already booked on %q", err.Desk, err.Date.Format(dateFormat))
 }
