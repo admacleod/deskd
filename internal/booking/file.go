@@ -50,6 +50,10 @@ func (f FileStore) dateGlob(date time.Time) string {
 	return filepath.Join(f.base, "*", date.Format(dateFormat), "*")
 }
 
+func (f FileStore) userDateGlob(user string, date time.Time) string {
+	return filepath.Join(f.base, "*", date.Format(dateFormat), user)
+}
+
 func (f FileStore) pathsToBookings(paths []string) ([]Booking, error) {
 	var ret []Booking
 	var err error
@@ -99,27 +103,37 @@ func (f FileStore) AvailableDesks(ctx context.Context, date time.Time) ([]string
 // Book attempts to create a booking for a user at a for a given time slot.
 // It checks for any booking conflicts before creating the booking entry in the store.
 func (f FileStore) Book(_ context.Context, user, desk string, date time.Time) (Booking, error) {
+	// Check the user does not already have a booking for this date.
+	desks, err := filepath.Glob(f.userDateGlob(user, date))
+	if err != nil {
+		return Booking{}, fmt.Errorf("globbing bookings on date: %w", err)
+	}
+	if len(desks) > 0 {
+		bb, err := f.pathsToBookings(desks)
+		if err != nil {
+			return Booking{}, fmt.Errorf("parsing existing bookings: %w", err)
+		}
+		return Booking{}, alreadyBookedError{Desk: bb[0].Desk, Date: date}
+	}
+
 	dir := filepath.Join(f.base, desk, date.Format(dateFormat))
 	file := filepath.Join(dir, user)
-	_, err := os.Stat(file)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		// Great! We can now create the booking.
-		break
-	case err != nil:
-		return Booking{}, fmt.Errorf("check booking file %q, does not already exist: %w", file, err)
-	default:
-		// Booking already exists
-		return Booking{}, AlreadyBookedError{Desk: desk, Date: date}
-	}
+
 	// Create the directory, it may already exist dangling after cancellation.
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return Booking{}, fmt.Errorf("create directory %q: %w", dir, err)
 	}
+
 	// Create the file
-	if _, err := os.Create(file); err != nil {
+	_, err = os.OpenFile(file, os.O_RDONLY|os.O_CREATE|os.O_EXCL, os.ModePerm)
+	switch {
+	case errors.Is(err, os.ErrExist):
+		// Booking already exists
+		return Booking{}, alreadyBookedError{Desk: desk, Date: date}
+	case err != nil:
 		return Booking{}, fmt.Errorf("create file %q: %w", file, err)
 	}
+
 	return Booking{
 		User: user,
 		Desk: desk,

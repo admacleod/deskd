@@ -18,6 +18,7 @@
 package booking
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -28,16 +29,17 @@ type Booking struct {
 	Date time.Time
 }
 
-type AlreadyBookedError struct {
+var ErrAlreadyBooked = errors.New("desk already booked")
+
+type alreadyBookedError struct {
 	Desk string
 	Date time.Time
-	Err  error
 }
 
-func (err AlreadyBookedError) Unwrap() error {
-	return err.Err
+func (err alreadyBookedError) Unwrap() error {
+	return ErrAlreadyBooked
 }
 
-func (err AlreadyBookedError) Error() string {
-	return fmt.Sprintf("desk with ID %q already booked on %q: %v", err.Desk, err.Date, err.Err)
+func (err alreadyBookedError) Error() string {
+	return fmt.Sprintf("desk with ID %q already booked on %q", err.Desk, err.Date)
 }

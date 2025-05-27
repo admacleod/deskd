@@ -18,6 +18,7 @@
 package booking_test
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -75,27 +76,35 @@ func TestFileStore_UserBookings(t *testing.T) {
 }
 
 func TestFileStore_Book(t *testing.T) {
+	testUser := "foo@example.com"
+	testDesk := "desk1"
 	testDate := time.Now().Format(time.DateOnly)
 	testTime, err := time.Parse(time.DateOnly, testDate)
 	if err != nil {
 		t.Fatalf("time.Parse: %v", err)
 	}
 	s := booking.NewFileStore("./testdata/simple")
-	b, err := s.Book(t.Context(), "foo@example.com", "desk1", testTime)
+	b, err := s.Book(t.Context(), testUser, testDesk, testTime)
 	if err != nil {
 		t.Fatalf("Book: %v", err)
 	}
 	t.Cleanup(func() {
-		s.CancelBooking(t.Context(), "foo@example.com", "desk1", testTime)
+		s.CancelBooking(t.Context(), testUser, testDesk, testTime)
 	})
-	if b.User != "foo@example.com" {
-		t.Errorf("Book: got %q user, want 'foo@example.com'", b.User)
+	if b.User != testUser {
+		t.Errorf("Book: got %q user, want %q", b.User, testUser)
 	}
-	bookings, err := s.UserBookings(t.Context(), "foo@example.com")
+	if _, err := s.Book(t.Context(), testUser, "desk2", testTime); err == nil || !errors.Is(err, booking.ErrAlreadyBooked) {
+		t.Errorf("Book: got %v, want ErrAlreadyBooked", err)
+	}
+	bookings, err := s.UserBookings(t.Context(), testUser)
 	if len(bookings) != 1 {
 		t.Errorf("UserBookings: got %d bookings, want 1", len(bookings))
 	}
-	if bookings[0].Desk != "desk1" && bookings[0].Date != testTime {
-		t.Errorf("UserBookings: got booking %v, want booking for 'desk2'", bookings[0])
+	if bookings[0].Desk != testDesk && bookings[0].Date != testTime {
+		t.Errorf("UserBookings: got booking %v, want booking for %q", bookings[0], testDesk)
+	}
+	if _, err := s.Book(t.Context(), testUser, "desk1", testTime); err == nil || !errors.Is(err, booking.ErrAlreadyBooked) {
+		t.Errorf("Book: got %v, want ErrAlreadyBooked", err)
 	}
 }
