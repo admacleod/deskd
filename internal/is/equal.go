@@ -1,4 +1,4 @@
-// Copyright 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+// Copyright 2026 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
 //
 // This file is part of deskd.
 //
@@ -15,8 +15,29 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with deskd. If not, see <https://www.gnu.org/licenses/>.
 
-module github.com/admacleod/deskd
+// Package is provides helper functions for testing, similar to testify/assert.
+package is
 
-go 1.26
+import (
+	"cmp"
+	"slices"
+	"testing"
+)
 
-require github.com/mattn/go-sqlite3 v1.14.34
+// Equal checks that the two values are equal.
+func Equal[T comparable](t testing.TB, expect, actual T) {
+	t.Helper()
+
+	if expect != actual {
+		t.Errorf("incorrect values:\nexpect=%v\nactual=%v", expect, actual)
+	}
+}
+
+// EqualSlice checks that the two slices are equal.
+func EqualSlice[S interface{ ~[]E }, E cmp.Ordered](t testing.TB, expect, actual S) {
+	t.Helper()
+
+	if slices.Compare(expect, actual) != 0 {
+		t.Errorf("incorrect values:\nexpect=%v\nactual=%v", expect, actual)
+	}
+}

@@ -1,4 +1,4 @@
-// Copyright 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+// Copyright 2026 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
 //
 // This file is part of deskd.
 //
@@ -15,8 +15,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with deskd. If not, see <https://www.gnu.org/licenses/>.
 
-module github.com/admacleod/deskd
+package about
 
-go 1.26
+import (
+	_ "embed"
+	"log"
+	"net/http"
+)
 
-require github.com/mattn/go-sqlite3 v1.14.34
+//go:embed about.html
+var aboutPage []byte
+
+func Handler() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		if _, err := w.Write(aboutPage); err != nil {
+			log.Printf("Error writing about page: %v", err)
+			return
+		}
+	}
+}

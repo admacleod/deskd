@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<title>Hot Desk</title>
+<body>
+<nav>
+    <h1><a href="/about">Hot Desk</a></h1>
+    <a href="/">Your Bookings</a> |
+    <a href="/book">Desk Booking</a>
+</nav>
+<div>
+    <h1>Desk Booking</h1>
+    <img src="/static/floorplan.png" alt="Floor plan">
+    {{ with .Bookings }}
+        <h2>Current bookings for {{ $.Date.Format "02/01/2006" }}</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Desk</th>
+                <th>Booked By</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range . }}
+                <tr>
+                    <td>{{ .Desk }}</td>
+                    <td>{{ .User }}</td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    {{ end }}
+    {{ with .Desks }}
+        <h2>Book a desk for {{ $.Date.Format "02/01/2006" }}</h2>
+        <form method="POST">
+            <input type="hidden" name="{{ $.CSRFFormKey }}" value="{{ $.CSRFNonce }}">
+            {{ range . }}
+                <input type="radio" id="{{ . }}" name="{{ $.DeskFormKey }}" value="{{ . }}">
+                <label for="{{ . }}">{{ . }}</label>
+                <br/>
+            {{ end }}
+            <br/>
+            <button type="submit">Book!</button>
+        </form>
+    {{ else }}
+        <p>Sorry no desks are available for {{ $.Date.Format "02/01/2006" }}.</p>
+    {{ end }}
+</div>
+</body>
+</html>

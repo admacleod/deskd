@@ -8,34 +8,33 @@ For commercial licences please get in touch.
 
 `deskd` is intended to be run as a cgi program on a web server.
 
+Developer documentation is mostly in [`doc.go`](./doc.go) so you can read it using GoDoc.
+
 ## Building
 
 Everything is Go, so you can just use `go build` or `go install` to build binaries.
 
 It is now possible (and strongly recommended) to statically build this like so:
 ```
-CGO_ENABLED=1 go build -ldflags '-s -w -linkmode external -extldflags "-fno-PIC -static"' -o deskd
+CGO_ENABLED=1 go build -tags 'sqlite_foreign_keys' -ldflags '-s -w -linkmode external -extldflags "-fno-PIC -static"' -o deskd
 ```
 so that no libraries need to be copied around if running in chroot or scratch containers.
 
 ## Configuration
 
-`deskd` reads its configuration from the same places (in order of precedence):
-
-- commandline flags passed directly to each tool
-- environment variables, prefixed with `DESKD_`
+`deskd` reads its configuration from the environment only.
 
 The configuration options are as follows:
 
-| Flag     | Env           | Type      | Default      | Description                        |
-|----------|---------------|-----------|--------------|------------------------------------|
-| `-db`    | `DESKD_DB`    | `string`  | `"db/deskd"` | Location of the database directory |
+| Env        | Type     | Default                                               | Description                                                |
+|------------|----------|-------------------------------------------------------|------------------------------------------------------------|
+| `DESKD_DB` | `string` | `"file:/db/deskd.db?cache=shared&_foreign_keys=true"` | The DSN used to access a sqlite database storing bookings. |
 
 ### Adding desks
 
-As `deskd` uses a the filesystem to store bookings you can add and remove bookable desks by
-adding and removing directories with the names of the desks from the top level of the database
-directory.
+As `deskd` uses the database to store bookings you can add and remove bookable desks by
+adding and removing entries in the `desks` table, changes will be reflected in the
+application immediately.
 
 ## Deployment
 
@@ -67,14 +66,20 @@ displayed inside the application to identify booked desks.
 
 ### Copy static files
 
+I would advise you use the provided `style.css` to ensure users get something
+a little nicer than totally bare HTML (although, feel free to write your own),
+so copy this file into a suitable location, I tend to choose
+`/var/www/htdocs/static`.
+
 If you would like deskd to use your favicon and display a floorplan when booking
-desks then copy `favicon.ico` and `floorplan.png` into a suitable location, I
-tend to choose `/var/www/htdocs/static`.
+desks then copy `favicon.ico` and `floorplan.png` into the same location, and it 
+will use them from there.
 
 ### Configure httpd
 
 Update the httpd.conf to correctly use TLS (**NEVER** do HTTP Basic Auth over an
-unsecured channel), to redirect to TLS and to serve CGI and static files.
+unsecured channel as it will leak usernames and passwords to anyone on the network),
+to redirect to TLS, and to serve CGI and static files.
 
 ```
 server "deskd.example.com" {

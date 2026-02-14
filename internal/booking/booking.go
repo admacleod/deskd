@@ -1,4 +1,4 @@
-// Copyright 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+// Copyright 2026 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
 //
 // This file is part of deskd.
 //
@@ -18,28 +18,18 @@
 package booking
 
 import (
-	"errors"
-	"fmt"
 	"time"
 )
 
+// Booking represents a booking of a desk for a given date.
 type Booking struct {
+	// User identifies the user making the booking.
 	User string
+	// Desk identifies the desk being booked.
 	Desk string
+	// Date identifies the date the booking is for.
+	// Date is expected to always be in UTC and
+	// YYYY-MM-DD format. Any location information
+	// or time information will be stripped.
 	Date time.Time
-}
-
-var ErrAlreadyBooked = errors.New("desk already booked")
-
-type alreadyBookedError struct {
-	Desk string
-	Date time.Time
-}
-
-func (err alreadyBookedError) Unwrap() error {
-	return ErrAlreadyBooked
-}
-
-func (err alreadyBookedError) Error() string {
-	return fmt.Sprintf("desk with ID %q already booked on %q", err.Desk, err.Date.Format(dateFormat))
 }

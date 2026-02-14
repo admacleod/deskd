@@ -1,4 +1,4 @@
-// Copyright 2022 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
+// Copyright 2026 Alisdair MacLeod <copying@alisdairmacleod.co.uk>
 //
 // This file is part of deskd.
 //
@@ -15,8 +15,30 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with deskd. If not, see <https://www.gnu.org/licenses/>.
 
-module github.com/admacleod/deskd
+package about_test
 
-go 1.26
+import (
+	_ "embed"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-require github.com/mattn/go-sqlite3 v1.14.34
+	"github.com/admacleod/deskd/internal/is"
+	"github.com/admacleod/deskd/internal/scripts/about"
+)
+
+//go:embed about.html
+var expect string
+
+func TestHandler(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "https://example.com", nil)
+	w := httptest.NewRecorder()
+
+	handler := about.Handler()
+
+	handler.ServeHTTP(w, r)
+
+	is.Equal(t, http.StatusOK, w.Code)
+	is.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+	is.Equal(t, expect, w.Body.String())
+}

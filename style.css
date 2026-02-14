@@ -1,0 +1,51 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    & > div {
+        margin: 8px;
+    }
+}
+h1 {
+    margin-block-start: 0;
+}
+nav {
+    background: teal;
+    color: black;
+    padding: 8px;
+    & a,
+    & a:hover {
+        text-decoration: inherit;
+        color: inherit;
+    }
+}
+table {
+    width: 100%;
+}
+table, th, td {
+    border-collapse: collapse;
+}
+thead {
+    border-bottom: 1px solid black;
+}
+th {
+    text-align: inherit;
+}
+tr:nth-child(even) {
+    background: lightgray;
+}
+img {
+    max-width: 100%;
+    padding-bottom: 20px;
+}
+pre {
+    white-space: pre-wrap;
+}
+dialog {
+    position: inherit;
+    width: auto;
+    background: limegreen;
+    font-weight: bold;
+}
+button {
+    padding: .375rem .75rem;
+}

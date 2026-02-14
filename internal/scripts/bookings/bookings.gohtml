@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<title>Hot Desk</title>
+<body>
+<nav>
+    <h1><a href="/about">Hot Desk</a></h1>
+    <a href="/">Your Bookings</a> |
+    <a href="/book">Desk Booking</a>
+</nav>
+<div>
+    {{ with .Bookings }}
+        <h1>Your Upcoming Bookings</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Desk</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range . }}
+                <tr>
+                    <td>{{ .Date.Format "02/01/2006" }}</td>
+                    <td>{{ .Desk }}</td>
+                    <td style="text-align: center">
+                        <form method="POST">
+                            <input type="hidden" name="{{ $.CSRFFormKey }}" value="{{ $.CSRFNonce }}">
+                            <input type="hidden" name="{{ $.DeskFormKey }}" value="{{ .Desk }}">
+                            <input type="hidden" name="{{ $.DateFormKey }}" value="{{ .Date.Format "2006-01-02" }}">
+                            <button type="submit">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    {{ else }}
+        <h1>No Upcoming Bookings</h1>
+    {{ end }}
+</div>
+</body>
+</html>
