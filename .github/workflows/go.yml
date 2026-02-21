@@ -1,19 +1,40 @@
 name: Go
 permissions:
   contents: read
-on: [push]
+on:
+  push:
+  schedule:
+    - cron: '0 6 * * *'
 jobs:
-  test:
+  go:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - { go-version: stable }
+          - { go-version-file: go.mod }
+        deps:
+          - locked
+          - latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
         with:
-          go-version: 'stable'
-      - name: Build
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go.go-version }}
+          go-version-file: ${{ matrix.go.go-version-file }}
+      - name: get
+        run: |
+          if [ "${{ matrix.deps }}" = "locked" ]; then
+            go get -u -t ./...
+          fi
+      - name: build
         run: go build -v ./...
-      - name: Test
+      - name: test
         run: go test -v ./...
-      - name: Vet
+      - name: vet
         run: go vet -v ./...
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
