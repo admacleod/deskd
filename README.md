@@ -16,7 +16,7 @@ Everything is Go, so you can just use `go build` or `go install` to build binari
 
 It is now possible (and strongly recommended) to statically build this like so:
 ```
-CGO_ENABLED=1 go build -tags 'sqlite_foreign_keys' -ldflags '-s -w -linkmode external -extldflags "-fno-PIC -static"' -o deskd
+CGO_ENABLED=1 go build -ldflags="-s -extldflags=-static" -o deskd
 ```
 so that no libraries need to be copied around if running in chroot or scratch containers.
 
@@ -26,9 +26,9 @@ so that no libraries need to be copied around if running in chroot or scratch co
 
 The configuration options are as follows:
 
-| Env        | Type     | Default                                               | Description                                                |
-|------------|----------|-------------------------------------------------------|------------------------------------------------------------|
-| `DESKD_DB` | `string` | `"file:/db/deskd.db?cache=shared&_foreign_keys=true"` | The DSN used to access a sqlite database storing bookings. |
+| Env        | Type     | Default                            | Description                                                |
+|------------|----------|------------------------------------|------------------------------------------------------------|
+| `DESKD_DB` | `string` | `"file:/db/deskd.db?cache=shared"` | The DSN used to access a sqlite database storing bookings. |
 
 ### Adding desks
 

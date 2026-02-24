@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	defaultDSN = "file:/db/deskd.db?cache=shared&_foreign_keys=true"
+	defaultDSN = "file:/db/deskd.db?cache=shared"
 	dateFormat = time.DateOnly
 )
 
