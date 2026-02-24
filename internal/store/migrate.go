@@ -78,25 +78,32 @@ func Migrate(ctx context.Context, db *sql.DB) error {
 				}
 				return retErr
 			}
-			for _, date := range dates {
-				if !date.IsDir() {
+			for _, d := range dates {
+				if !d.IsDir() {
 					continue
 				}
-				if _, err := time.Parse(dateFormat, date.Name()); err != nil {
-					log.Printf("Ignoring legacy file store date %q: %v", date.Name(), err)
-					continue
-				}
-				users, err := os.ReadDir(filepath.Join(legacyPath, desk.Name(), date.Name()))
+				date, err := time.Parse(dateFormat, d.Name())
 				if err != nil {
-					log.Printf("Unable to read legacy file store %q, ignoring this path: %v", filepath.Join(legacyPath, desk.Name(), date.Name()), err)
+					log.Printf("Ignoring legacy file store date %q: %v", d.Name(), err)
+					continue
+				}
+				// Don't bother migrating past bookings.
+				// Date value is in UTC in the database, so truncation
+				// can be used as it will strip any location information.
+				if date.Before(time.Now().UTC().Truncate(24 * time.Hour)) {
+					continue
+				}
+				users, err := os.ReadDir(filepath.Join(legacyPath, desk.Name(), d.Name()))
+				if err != nil {
+					log.Printf("Unable to read legacy file store %q, ignoring this path: %v", filepath.Join(legacyPath, desk.Name(), d.Name()), err)
 					continue
 				}
 				for _, user := range users {
 					if user.IsDir() {
 						continue
 					}
-					if _, err := tx.ExecContext(ctx, `INSERT INTO bookings (user, desk, day) VALUES (?, ?, ?)`, user.Name(), desk.Name(), date.Name()); err != nil {
-						retErr := fmt.Errorf("insert booking user=%q desk=%q date=%q: %w", user.Name(), desk.Name(), date.Name(), err)
+					if _, err := tx.ExecContext(ctx, `INSERT INTO bookings (user, desk, day) VALUES (?, ?, ?)`, user.Name(), desk.Name(), ToDate(date)); err != nil {
+						retErr := fmt.Errorf("insert booking user=%q desk=%q date=%q: %w", user.Name(), desk.Name(), ToDate(date), err)
 						if rollbackErr := tx.Rollback(); rollbackErr != nil {
 							retErr = errors.Join(retErr, fmt.Errorf("rollback transaction: %w", rollbackErr))
 						}
