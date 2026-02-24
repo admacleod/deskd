@@ -54,10 +54,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", bookings.Handler(dsnEnvKey))
 	mux.HandleFunc("POST /", cancel.Handler(dsnEnvKey))
-	mux.HandleFunc("/book", dateform.Handler())
-	mux.HandleFunc(fmt.Sprintf("/book/{%s}", dayPathKey), bookingform.Handler(dsnEnvKey, dayPathKey))
+	mux.HandleFunc("GET /book", dateform.Handler())
+	mux.HandleFunc(fmt.Sprintf("GET /book/{%s}", dayPathKey), bookingform.Handler(dsnEnvKey, dayPathKey))
 	mux.HandleFunc(fmt.Sprintf("POST /book/{%s}", dayPathKey), book.Handler(dsnEnvKey, dayPathKey))
-	mux.HandleFunc("/about", about.Handler())
+	mux.HandleFunc("GET /about", about.Handler())
 
 	if err := cgi.Serve(mux); err != nil {
 		log.Printf("Problem serving request: %v", err)
