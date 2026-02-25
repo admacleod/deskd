@@ -18,6 +18,7 @@
 package book
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -66,8 +67,8 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 			return
 		}
 
-		if err := store.WithDatabaseFromEnv(dsnEnvKey, func(db *sql.DB) error {
-			if _, err := db.ExecContext(r.Context(), `INSERT INTO bookings (user, desk, day) VALUES (?,?,?)`, user, desk, store.ToDate(date)); err != nil {
+		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
+			if _, err := db.ExecContext(ctx, `INSERT INTO bookings (user, desk, day) VALUES (?,?,?)`, user, desk, store.ToDate(date)); err != nil {
 				return fmt.Errorf("insert booking: %w", err)
 			}
 			return nil

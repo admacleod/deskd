@@ -30,6 +30,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -58,11 +60,41 @@ func ToDate(t time.Time) string {
 // error returned by the passed function.
 // If the call to close the database connection fails, then the function will log
 // using the standard logger but will not return an error.
-func WithDatabaseFromEnv(dsnEnvKey string, fn func(db *sql.DB) error) error {
+func WithDatabaseFromEnv(ctx context.Context, dsnEnvKey string, fn func(ctx context.Context, db *sql.DB) error) error {
 	dsn := os.Getenv(dsnEnvKey)
 	if dsn == "" {
 		dsn = defaultDSN
 		log.Printf("missing DSN definition, using fallback DSN %q", defaultDSN)
+	}
+
+	// "Parse" the DSN, there are a couple of things to be checked:
+	// Any query parameters (after "?") should be stripped off.
+	// If it starts with "file:" then the following part _may_ be a file name.
+	// If the file section (or the entire DSN) is ":memory:" then it is an in-memory database and does not need to be created.
+	// This should leave us with an actual filepath. If the directory does not exist, then we will create it.
+	// If the file does not exist, then we will let sqlite create it, but we will run a migration after opening the connection so that the new database is correctly configured.
+	dbFile := dsn
+	newDB := false
+	if pos := strings.Index(dbFile, "?"); pos != -1 {
+		dbFile = dbFile[:pos]
+	}
+	strings.TrimPrefix(dbFile, "file:")
+	if dbFile != ":memory:" {
+		_, err := os.Stat(dbFile)
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			// Create the directory with all users having read and write permissions to try to
+			// avoid issues where the user running this command for the first time is not the
+			// same user as will be used to administer the database or handle CGI requests.
+			// This could be left up to the operator, but this is simpler (if potentially a little
+			// lax in security).
+			if mkdirErr := os.MkdirAll(filepath.Dir(dbFile), 0666); mkdirErr != nil {
+				return fmt.Errorf("create database directory %q: %w", dbFile, mkdirErr)
+			}
+			newDB = true
+		case err != nil:
+			return fmt.Errorf("stat database file %q: %w", dbFile, err)
+		}
 	}
 
 	db, err := sql.Open("sqlite3", dsn)
@@ -77,15 +109,21 @@ func WithDatabaseFromEnv(dsnEnvKey string, fn func(db *sql.DB) error) error {
 	}()
 
 	// Ensure foreign key constraints are enforced.
-	if _, err := db.Exec(`PRAGMA foreign_keys = ON`); err != nil {
+	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
 		return fmt.Errorf("enable foreign key constraints: %w", err)
 	}
 	// Wait if the database is currently locked rather than aborting immediately.
-	if _, err := db.Exec(`PRAGMA busy_timeout = 5000`); err != nil {
+	if _, err := db.ExecContext(ctx, `PRAGMA busy_timeout = 5000`); err != nil {
 		return fmt.Errorf("enable busy timeout: %w", err)
 	}
 
-	return fn(db)
+	if newDB {
+		if err := Migrate(ctx, db); err != nil {
+			return fmt.Errorf("migrate new database: %w", err)
+		}
+	}
+
+	return fn(ctx, db)
 }
 
 type queryerContext interface {

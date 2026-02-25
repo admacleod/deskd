@@ -56,13 +56,13 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 
 		var bb []booking.Booking
 		var dd []string
-		if err := store.WithDatabaseFromEnv(dsnEnvKey, func(db *sql.DB) error {
+		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
 			var err error
-			bb, err = store.QueryBookingContext(r.Context(), db, `SELECT user, desk, day FROM bookings WHERE day = ?`, store.ToDate(date))
+			bb, err = store.QueryBookingContext(ctx, db, `SELECT user, desk, day FROM bookings WHERE day = ?`, store.ToDate(date))
 			if err != nil {
 				return fmt.Errorf("list booked desks for day %q: %w", date, err)
 			}
-			dd, err = queryDeskContext(r.Context(), db, `SELECT desk FROM desks WHERE desk NOT IN (SELECT desk FROM bookings WHERE day = ?)`, store.ToDate(date))
+			dd, err = queryDeskContext(ctx, db, `SELECT desk FROM desks WHERE desk NOT IN (SELECT desk FROM bookings WHERE day = ?)`, store.ToDate(date))
 			if err != nil {
 				return fmt.Errorf("list available desks for day %q: %w", date, err)
 			}

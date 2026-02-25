@@ -42,8 +42,8 @@ const (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		if err := store.WithDatabaseFromEnv(dsnEnvKey, func(db *sql.DB) error {
-			return store.Migrate(context.Background(), db)
+		if err := store.WithDatabaseFromEnv(context.Background(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
+			return store.Migrate(ctx, db)
 		}); err != nil {
 			log.Printf("cannot migrate database: %v", err)
 			os.Exit(1)

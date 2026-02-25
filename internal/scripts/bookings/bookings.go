@@ -18,6 +18,7 @@
 package bookings
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
 	"fmt"
@@ -44,9 +45,9 @@ func Handler(dsnEnvKey string) http.HandlerFunc {
 		}
 
 		var bb []booking.Booking
-		if err := store.WithDatabaseFromEnv(dsnEnvKey, func(db *sql.DB) error {
+		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
 			var err error
-			bb, err = store.QueryBookingContext(r.Context(), db, `SELECT user, desk, day FROM bookings WHERE user = ? AND day >= DATE() ORDER BY day ASC`, user)
+			bb, err = store.QueryBookingContext(ctx, db, `SELECT user, desk, day FROM bookings WHERE user = ? AND day >= DATE() ORDER BY day ASC`, user)
 			if err != nil {
 				return fmt.Errorf("list booked desks for user %q: %w", user, err)
 			}

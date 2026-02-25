@@ -18,6 +18,7 @@
 package cancel
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -63,8 +64,8 @@ func Handler(dsnEnvKey string) http.HandlerFunc {
 			return
 		}
 
-		if err := store.WithDatabaseFromEnv(dsnEnvKey, func(db *sql.DB) error {
-			if _, err := db.ExecContext(r.Context(), `DELETE FROM bookings WHERE user = ? AND desk = ? AND day = ?`, user, desk, store.ToDate(date)); err != nil {
+		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
+			if _, err := db.ExecContext(ctx, `DELETE FROM bookings WHERE user = ? AND desk = ? AND day = ?`, user, desk, store.ToDate(date)); err != nil {
 				return fmt.Errorf("cancel booking: %w", err)
 			}
 			return nil
