@@ -27,7 +27,7 @@ jobs:
           go-version-file: ${{ matrix.go.go-version-file }}
       - name: get
         run: |
-          if [ "${{ matrix.deps }}" = "locked" ]; then
+          if [ "${{ matrix.deps }}" = "latest" ]; then
             go get -u -t ./...
           fi
       - name: build
