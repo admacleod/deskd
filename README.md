@@ -8,13 +8,11 @@ For commercial licences please get in touch.
 
 `deskd` is intended to be run as a cgi program on a web server.
 
-Developer documentation is mostly in [`doc.go`](./doc.go) so you can read it using GoDoc.
-
 ## Building
 
 Everything is Go, so you can just use `go build` or `go install` to build binaries.
 
-It is now possible (and strongly recommended) to statically build this like so:
+It is now possible (and strongly recommended) to statically build like so:
 ```
 CGO_ENABLED=1 go build -ldflags="-s -extldflags=-static" -o deskd
 ```
@@ -95,7 +93,7 @@ server "deskd.example.com" {
 	location "*" {
 		fastcgi {
 			param SCRIPT_FILENAME "/cgi-bin/deskd"
-			param DESKD_DB "/db/deskd"
+			param DESKD_DB "/db/deskd.db"
 		}
 	}
 }
@@ -123,3 +121,63 @@ rcctl start httpd slowcgi
 
 You may have some permissions issues with the initial database setup (I need to
 fix this), just make sure it can be read and written by `www` user.
+
+# Development Documentation
+
+`deskd` is attempted to be laid out in a sensible sort of fashion.
+What I'm going for is to have each path as individual as possible.
+So rather than creating objects to handle all the required
+functionality, instead each path should be able to be considered
+as a totally separate script or application.
+
+The rationale behind this separation is that this software is
+intended to run as a CGI script; this means that every request
+results in a new invocation of the entire application.
+In some regards this is useful because the expected traffic on
+the deployed application is very low and CGI means that there is
+no resource usage at all.
+However, if I want to "optimize" (and bear in mind this is a toy
+project for me, so premature optimization is one of the goals),
+then each invocation should only consume the resources (database
+connections, filesystem access) required to process that single
+path.
+The separation is also useful in case I ever wish to split the
+application into actual separate scripts, which I am still 
+undecided on, mainly because it makes deployment more challenging.
+
+## Dependencies
+
+External dependencies are kept to a minimum:
+- A sqlite driver (no such driver exists in the standard library for good reasons).
+  The mattn/go-sqlite3 driver has been selected as it is the most popular and is,
+  at the time of writing, the only one in the list at https://go.dev/wiki/SQLDrivers
+  and is included in, and passes, the https://github.com/bradfitz/go-sql-test
+  test suite. (Yes, I know this is a sort of meaningless bar to cross, but it is at
+  least _something_).
+- A natural sorting library. This is helpful to handle human-friendly sorting of
+  desks, and no such sorting function exists in the standard library.
+  The maruel/natural library has been selected as it is both popular, recently
+  updated (it slots neatly into the new `slices.Sort` function), has a comprehensive
+  test suite, and takes care to reduce memory allocations, which isn't that
+  important for this application, but is a useful metric that the author has taken
+  some care (or just loves optimization)!
+
+## Database
+
+I've gone back and forth on using a database or just the filesystem for storing
+desk bookings.
+The filesystem does not require any additional dependencies, but it is an
+absolute pain to set up and maintain, and the performance is not great.
+The sqlite database is straightforward and embedded, so no need to deploy a
+separate database server.
+It is also much more performant, and some logic around uniqueness (and possibly
+sorting which I would like to investigate in the future) can be offloaded to the
+database.
+This keeps the application code much simpler, which means less to maintain, and
+that is a good thing for a toy project.
+
+Yes, I know that sqlite can have locking issues. I consider that the intended
+deployment of this application is for at most 30 users with essentially no traffic,
+and very little change of concurrent user access, so I don't think it is a problem.
+Even if you wanted to scale this out, there are lots of ways that sqlite can be
+configured to deal with this; I just haven't had to worry about it yet.
