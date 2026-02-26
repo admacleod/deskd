@@ -19,4 +19,7 @@ module github.com/admacleod/deskd
 
 go 1.26
 
-require github.com/mattn/go-sqlite3 v1.14.34
+require (
+	github.com/maruel/natural v1.3.0
+	github.com/mattn/go-sqlite3 v1.14.34
+)

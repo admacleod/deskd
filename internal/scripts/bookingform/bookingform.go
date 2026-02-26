@@ -30,9 +30,10 @@ import (
 	"slices"
 	"time"
 
+	"github.com/maruel/natural"
+
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/htmlform"
-	"github.com/admacleod/deskd/internal/scripts/bookingform/internal/natural"
 	"github.com/admacleod/deskd/internal/store"
 )
 
@@ -73,9 +74,9 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 			return
 		}
 		slices.SortFunc(bb, func(a, b booking.Booking) int {
-			return natural.Sort(a.Desk, b.Desk)
+			return natural.Compare(a.Desk, b.Desk)
 		})
-		slices.SortFunc(dd, natural.Sort)
+		slices.SortFunc(dd, natural.Compare)
 
 		data := struct {
 			CSRFFormKey string
