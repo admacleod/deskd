@@ -54,17 +54,32 @@ func ToDate(t time.Time) string {
 // WithDatabaseFromEnv is a convenience function to allow callers to simply access
 // a sqlite database connection from an environment variable without having to
 // implement database connection or closing of the connection.
+// Underneath it calls WithCustomDatabaseFromEnv with the default sqlite driver.
+func WithDatabaseFromEnv(ctx context.Context, dsnEnvKey string, fn func(ctx context.Context, db *sql.DB) error) error {
+	return WithCustomDatabaseFromEnv(ctx, "sqlite3", dsnEnvKey, fn)
+}
+
+// WithCustomDatabaseFromEnv is a convenience function to allow callers to simply access
+// a database connection (usually sqlite based) from an environment variable without
+// having to implement database connection or closing of the connection.
 // If the connection cannot be established, then the passed function will not be
 // called and an error will be returned, meaning that the passed function should
 // never receive a nil database pointer. Otherwise, the returned error will be the
 // error returned by the passed function.
 // If the call to close the database connection fails, then the function will log
 // using the standard logger but will not return an error.
-func WithDatabaseFromEnv(ctx context.Context, dsnEnvKey string, fn func(ctx context.Context, db *sql.DB) error) error {
+// If an empty string is passed for the driver, then the default sqlite driver will
+// be used.
+// If the DSN is empty, then the default DSN will be used.
+// It will check if the database file exists and create it if it does not.
+func WithCustomDatabaseFromEnv(ctx context.Context, driver, dsnEnvKey string, fn func(ctx context.Context, db *sql.DB) error) error {
 	dsn := os.Getenv(dsnEnvKey)
 	if dsn == "" {
 		dsn = defaultDSN
 		log.Printf("missing DSN definition, using fallback DSN %q", defaultDSN)
+	}
+	if driver == "" {
+		driver = "sqlite3"
 	}
 
 	// "Parse" the DSN, there are a couple of things to be checked:
@@ -97,7 +112,7 @@ func WithDatabaseFromEnv(ctx context.Context, dsnEnvKey string, fn func(ctx cont
 		}
 	}
 
-	db, err := sql.Open("sqlite3", dsn)
+	db, err := sql.Open(driver, dsn)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
 	}

@@ -27,21 +27,36 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"slices"
+	"sync"
 	"time"
 
 	"github.com/maruel/natural"
+	"github.com/mattn/go-sqlite3"
 
 	"github.com/admacleod/deskd/internal/booking"
 	"github.com/admacleod/deskd/internal/htmlform"
 	"github.com/admacleod/deskd/internal/store"
 )
 
+// Beware, this collation name conflicts with the NATURAL
+// keyword, so it must be double-quoted ("") in queries.
+const sqliteDriver = "sqlite3_natural"
+const sqliteCollation = "natural"
+
+var registerCollation sync.Once
+
 //go:embed bookingForm.gohtml
 var bookingFormTemplate string
 
 func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 	tmpl := template.Must(template.New("").Parse(bookingFormTemplate))
+	registerCollation.Do(func() {
+		sql.Register(sqliteDriver, &sqlite3.SQLiteDriver{
+			ConnectHook: func(conn *sqlite3.SQLiteConn) error {
+				return conn.RegisterCollation(sqliteCollation, natural.Compare)
+			},
+		})
+	})
 	return func(w http.ResponseWriter, r *http.Request) {
 		if user := os.Getenv("REMOTE_USER"); user == "" {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -57,13 +72,13 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 
 		var bb []booking.Booking
 		var dd []string
-		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
+		if err := store.WithCustomDatabaseFromEnv(r.Context(), sqliteDriver, dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
 			var err error
-			bb, err = store.QueryBookingContext(ctx, db, `SELECT user, desk, day FROM bookings WHERE day = ?`, store.ToDate(date))
+			bb, err = store.QueryBookingContext(ctx, db, fmt.Sprintf(`SELECT user, desk, day FROM bookings WHERE day = ? ORDER BY desk COLLATE %q`, sqliteCollation), store.ToDate(date))
 			if err != nil {
 				return fmt.Errorf("list booked desks for day %q: %w", date, err)
 			}
-			dd, err = queryDeskContext(ctx, db, `SELECT desk FROM desks WHERE desk NOT IN (SELECT desk FROM bookings WHERE day = ?)`, store.ToDate(date))
+			dd, err = queryDeskContext(ctx, db, fmt.Sprintf(`SELECT desk FROM desks WHERE desk NOT IN (SELECT desk FROM bookings WHERE day = ?) ORDER BY desk COLLATE %q`, sqliteCollation), store.ToDate(date))
 			if err != nil {
 				return fmt.Errorf("list available desks for day %q: %w", date, err)
 			}
@@ -73,10 +88,6 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		slices.SortFunc(bb, func(a, b booking.Booking) int {
-			return natural.Compare(a.Desk, b.Desk)
-		})
-		slices.SortFunc(dd, natural.Compare)
 
 		data := struct {
 			CSRFFormKey string

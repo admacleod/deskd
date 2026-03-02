@@ -170,9 +170,8 @@ The filesystem does not require any additional dependencies, but it is an
 absolute pain to set up and maintain, and the performance is not great.
 The sqlite database is straightforward and embedded, so no need to deploy a
 separate database server.
-It is also much more performant, and some logic around uniqueness (and possibly
-sorting which I would like to investigate in the future) can be offloaded to the
-database.
+It is also much more performant, and some logic around uniqueness and sorting
+can be offloaded to the database.
 This keeps the application code much simpler, which means less to maintain, and
 that is a good thing for a toy project.
 
