@@ -68,6 +68,11 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 		}
 
 		if err := store.WithDatabaseFromEnv(r.Context(), dsnEnvKey, func(ctx context.Context, db *sql.DB) error {
+			// Ensure foreign key constraints are enforced.
+			if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+				return fmt.Errorf("enable foreign key constraints: %w", err)
+			}
+
 			if _, err := db.ExecContext(ctx, `INSERT INTO bookings (user, desk, day) VALUES (?,?,?)`, user, desk, store.ToDate(date)); err != nil {
 				return fmt.Errorf("insert booking: %w", err)
 			}

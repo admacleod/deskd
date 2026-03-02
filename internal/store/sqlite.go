@@ -108,10 +108,6 @@ func WithDatabaseFromEnv(ctx context.Context, dsnEnvKey string, fn func(ctx cont
 		}
 	}()
 
-	// Ensure foreign key constraints are enforced.
-	if _, err := db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
-		return fmt.Errorf("enable foreign key constraints: %w", err)
-	}
 	// Wait if the database is currently locked rather than aborting immediately.
 	if _, err := db.ExecContext(ctx, `PRAGMA busy_timeout = 5000`); err != nil {
 		return fmt.Errorf("enable busy timeout: %w", err)
