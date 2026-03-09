@@ -123,6 +123,8 @@ foreach ( @tests ) {
         close($input);
         my %response = %{read_response($result)};
         close($result);
+        my $stderr = do { local $/; <$error> };
+        close($error);
         waitpid($pid, 0);
         is($? >> 8, 0, 'deskd exited successfully');
 
@@ -144,5 +146,7 @@ foreach ( @tests ) {
         $sqlite_actual =~ s/\r\n/\n/g;
         $sqlite_actual =~ s/\n+\z//;
         is($sqlite_actual, $test{expect_booking}, 'bookings match');
+
+        diag($stderr) if !Test::More->builder->is_passing && $stderr ne '';
     };
 }

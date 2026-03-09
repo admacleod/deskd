@@ -41,6 +41,11 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 			return
 		}
 
+		if !htmlform.CSRFCheck(w, r) {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+
 		date, err := time.Parse(htmlform.DateFormat, r.PathValue(dayPathKey))
 		if err != nil {
 			log.Printf("Error parsing date %q: %v", r.PathValue(dayPathKey), err)
@@ -53,11 +58,6 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 		// can be used as it will strip any location information.
 		if date.Before(time.Now().UTC().Truncate(24 * time.Hour)) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
-		if !htmlform.CSRFCheck(w, r) {
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}
 
@@ -78,7 +78,7 @@ func Handler(dsnEnvKey, dayPathKey string) http.HandlerFunc {
 			}
 			return nil
 		}); err != nil {
-			if sqliteErr, ok := errors.AsType[*sqlite3.Error](err); ok {
+			if sqliteErr, ok := errors.AsType[sqlite3.Error](err); ok {
 				switch {
 				case errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintForeignKey):
 					log.Printf("Desk %q does not exist", desk)
