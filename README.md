@@ -206,13 +206,26 @@ Desks Database Seed Data
   Each desk name is a separate line.
 ---
 Bookings Database Seed Data
+  Should be in the format of:
+    <user>,<desk>,<day>
+  The date is in RFC3339 format.
+  Each line is a separate booking.
 ---
 Request Environment Variables
   These are used to invoke the application so should emulate CGI environment variables.
   Each variable is a separate line.
   Each line is a key=value pair.
 ---
+Request Body
+  The request body is the raw HTTP request body.
+  Newline characters are normalised across the case.
+---
 Expected Bookings Database Data
+  Should be in the format of:
+    <user>,<desk>,<day>
+  The date is in RFC3339 format.
+  Each line is a separate booking.
+  Bookings should be sorted by user, then desk, then day.
 ---
 Expected Response
   This is the expected output of the application on STDOUT.

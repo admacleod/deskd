@@ -3,8 +3,10 @@ use strict;
 
 use FindBin '$Bin';
 use Cwd 'abs_path';
+use Symbol 'gensym';
 use Test::More;
 use File::Temp;
+use IPC::Open3;
 
 my ($deskd_bin) = @ARGV;
 if ( !defined($deskd_bin) ) {
@@ -17,6 +19,7 @@ my @test_format = (
     'desk_seed',
     'booking_seed',
     'request_env',
+    'request_data',
     'expect_booking',
     'expect_response'
 );
@@ -85,6 +88,26 @@ foreach ( @tests ) {
         );
         system($deskd_bin,  'migrate') == 0 or die 'failed to run database migration.';
 
+        # Seed the database.
+        my @sql = ('PRAGMA foreign_keys = ON;');
+        foreach my $line ( split("\n", $test{desk_seed}) ) {
+            next if $line eq '';
+            push(@sql, "INSERT INTO desks (desk) VALUES ('$line');");
+        }
+        foreach my $line ( split("\n", $test{booking_seed}) ) {
+            next if $line eq '';
+            my ($user, $desk, $day) = split(/,/, $line, 3);
+            push(@sql, "INSERT INTO bookings (user, desk, day) VALUES ('$user', '$desk', '$day');");
+        }
+        my $sqlite_error = gensym();
+        my $sqlite_pid = open3(my $sqlite_input, my $sqlite_output, $sqlite_error, 'sqlite3', $db_path);
+        print {$sqlite_input} join("\n", @sql) . "\n";
+        close($sqlite_input);
+        waitpid($sqlite_pid, 0);
+        if ( ($? >> 8) != 0 ) {
+            die 'failed to execute sqlite command';
+        }
+
         # Construct the environment to run in.
         my %child_env = (%ENV);
         foreach my $line ( split("\n", $test{request_env}) ) {
@@ -94,19 +117,32 @@ foreach ( @tests ) {
         }
         local %ENV = %child_env;
 
-        my $pid = open(my $result, '-|');
-        die "failed to fork: $!" unless defined $pid;
-        if ( $pid == 0 ) {
-            # Redirect STDERR as we don't want it to pollute TAP output on purposefully erroring test cases.
-            open(STDERR, '>', '/dev/null') or die "failed to redirect STDERR: $!";
-            exec $deskd_bin or die "failed to exec $deskd_bin: $!";
-        }
-
+        my $error = gensym();
+        my $pid = open3(my $input, my $result, $error, $deskd_bin);
+        print {$input} $test{request_data};
+        close($input);
         my %response = %{read_response($result)};
         close($result);
+        waitpid($pid, 0);
         is($? >> 8, 0, 'deskd exited successfully');
 
         is_deeply($response{'headers'}, $expect{'headers'}, 'headers match');
         is($response{'html'}, $expect{'html'}, 'html matches');
+
+        # Compare database state after run.
+        my $sqlite_actual_error = gensym();
+        my $sqlite_actual_pid = open3(my $sqlite_actual_input, my $sqlite_actual_output, $sqlite_actual_error, 'sqlite3', $db_path, '-batch', '-noheader', '-separator', ',');
+        print {$sqlite_actual_input} 'SELECT user, desk, day FROM bookings ORDER BY user, desk, day;';
+        close($sqlite_actual_input);
+        my $sqlite_actual = do { local $/; <$sqlite_actual_output> };
+        close($sqlite_actual_output);
+        waitpid($sqlite_actual_pid, 0);
+        if ( ($? >> 8) != 0 ) {
+            die 'failed to execute sqlite command after run';
+        }
+        # Normalize line breaks so that it will match test case.
+        $sqlite_actual =~ s/\r\n/\n/g;
+        $sqlite_actual =~ s/\n+\z//;
+        is($sqlite_actual, $test{expect_booking}, 'bookings match');
     };
 }
