@@ -1,0 +1,14 @@
+Date form page redirects to the booking page with valid date.
+---
+---
+---
+REQUEST_URI=/book?day=2022-01-01
+REQUEST_METHOD=GET
+SERVER_PROTOCOL=HTTP/1.1
+---
+---
+Status: 302 Found
+Content-Type: text/html; charset=utf-8
+Location: /book/2022-01-01
+
+<a href="/book/2022-01-01">Found</a>.

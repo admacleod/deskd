@@ -180,3 +180,42 @@ deployment of this application is for at most 30 users with essentially no traff
 and very little change of concurrent user access, so I don't think it is a problem.
 Even if you wanted to scale this out, there are lots of ways that sqlite can be
 configured to deal with this; I just haven't had to worry about it yet.
+
+## Testing
+
+There is a set of integration tests in `./test`. These are run using a custom test
+runner in `./test/test.pl` and test cases are defined in `.test` case files located
+alongside the test runner.
+
+To run the tests, build the application and then run:
+```
+perl test/test.pl <path to deskd binary>
+```
+
+### Case files
+
+An integration test case is a file containing a series of inputs and outputs for
+the test runner to read and use for testing.
+
+The format is as follows:
+```
+Test Case Description
+  A single line string describing the test case.
+---
+Desks Database Seed Data
+  Each desk name is a separate line.
+---
+Bookings Database Seed Data
+---
+Request Environment Variables
+  These are used to invoke the application so should emulate CGI environment variables.
+  Each variable is a separate line.
+  Each line is a key=value pair.
+---
+Expected Bookings Database Data
+---
+Expected Response
+  This is the expected output of the application on STDOUT.
+  Headers are not sorted or canonicalized (yeah, not great but whatever).
+  Newline characters will be normalised across the case and response.
+```

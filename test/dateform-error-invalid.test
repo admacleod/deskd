@@ -1,0 +1,14 @@
+Date form page errors with invalid date.
+---
+---
+---
+REQUEST_URI=/book?day=2022-01-32
+REQUEST_METHOD=GET
+SERVER_PROTOCOL=HTTP/1.1
+---
+---
+Status: 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+
+Bad Request
