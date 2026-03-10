@@ -229,6 +229,7 @@ Expected Bookings Database Data
 ---
 Expected Response
   This is the expected output of the application on STDOUT.
-  Headers are not sorted or canonicalized (yeah, not great but whatever).
-  Newline characters will be normalised across the case and response.
+  It is interpreted as a regex in the format:
+    qr/\A<value>\z/s
+  So it is possible to ignore or forward capture parts of the response such as CSRF tokens.
 ```
