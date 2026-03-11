@@ -19,7 +19,7 @@ me@example.com,foo,2200-01-02
 ---
 Status: 200 OK
 Content-Type: text/html; charset=utf-8
-Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+Set-Cookie: deskd_csrf=REGEX{(?<CSRF>.+?)}; Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
 
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -52,7 +52,7 @@ Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; Sam
                     <td>bar</td>
                     <td style="text-align: center">
                         <form method="POST">
-                            <input type="hidden" name="_csrf" value="\k<CSRF>">
+                            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
                             <input type="hidden" name="desk" value="bar">
                             <input type="hidden" name="day" value="2200-01-01">
                             <button type="submit">Cancel</button>
@@ -65,7 +65,7 @@ Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; Sam
                     <td>foo</td>
                     <td style="text-align: center">
                         <form method="POST">
-                            <input type="hidden" name="_csrf" value="\k<CSRF>">
+                            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
                             <input type="hidden" name="desk" value="foo">
                             <input type="hidden" name="day" value="2200-01-03">
                             <button type="submit">Cancel</button>

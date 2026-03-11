@@ -17,7 +17,7 @@ qux@example.com,foo,2200-01-03
 ---
 Status: 200 OK
 Content-Type: text/html; charset=utf-8
-Set-Cookie: deskd_csrf=(?:.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+Set-Cookie: deskd_csrf=REGEX{(?:.+?)}; Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
 
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -61,7 +61,7 @@ Set-Cookie: deskd_csrf=(?:.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite
     
     
         <p>Sorry no desks are available for 03/01/2200.</p>
-
+    
 </div>
 </body>
 </html>

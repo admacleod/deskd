@@ -18,7 +18,7 @@ REMOTE_USER=baz@example.com
 ---
 Status: 200 OK
 Content-Type: text/html; charset=utf-8
-Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+Set-Cookie: deskd_csrf=REGEX{(?<CSRF>.+?)}; Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
 
 <!DOCTYPE html>
 <html lang="en-GB">
@@ -40,7 +40,7 @@ Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; Sam
     
         <h2>Book a desk for 03/01/2200</h2>
         <form method="POST">
-            <input type="hidden" name="_csrf" value="\k<CSRF>">
+            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
             
                 <input type="radio" id="bar" name="desk" value="bar">
                 <label for="bar">bar</label>

@@ -231,5 +231,11 @@ Expected Response
   This is the expected output of the application on STDOUT.
   It is interpreted as a regex in the format:
     qr/\A<value>\z/s
-  So it is possible to ignore or forward capture parts of the response such as CSRF tokens.
+  However it will be passed through quotemeta() before being used.
+  In order to include regular expressions in the output they should be wrapped in
+  the sequence:
+    REGEX{<value>}
+  The <value> will be exluded from any quoting and the REGEX{} parts will be removed.
+  This makes it possible to ignore or forward capture parts of the response such
+  as CSRF tokens.
 ```

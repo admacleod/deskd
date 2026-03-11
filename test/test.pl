@@ -114,7 +114,18 @@ foreach ( @tests ) {
         # Normalize line breaks so that it will match test case.
         $response =~ s/\r\n/\n/g;
         $response =~ s/\n+\z//;
-        like($response, qr/\A$test{'expect_response'}\z/s, 'response matches');
+
+        # Process expected response to handle REGEX{} blocks. This allows for
+        # parts of the expected response to be treated as regular expressions,
+        # while the rest is treated as a literal string.
+        my @parts = split(/(REGEX\{.*?\})/, $test{'expect_response'});
+        my $regex_string = '';
+        foreach my $part (@parts) {
+            # If the part is a REGEX{} block, extract its content and use it as-is.
+            # Otherwise, quote all meta-characters to treat it as a literal.
+            $regex_string .= $part =~ s/\AREGEX\{(.*)\}\z/$1/ ? $part : quotemeta($part);
+        }
+        like($response, qr/\A$regex_string\z/s, 'response matches');
 
         # Compare database state after run.
         my $sqlite_actual_error = gensym();
