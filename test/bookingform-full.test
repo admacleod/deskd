@@ -1,0 +1,67 @@
+Booking form page renders correctly when all desks are booked.
+---
+foo
+bar
+---
+me@example.com,bar,2200-01-03
+qux@example.com,foo,2200-01-03
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/book/2200-01-03
+REQUEST_METHOD=GET
+REMOTE_USER=baz@example.com
+---
+---
+me@example.com,bar,2200-01-03
+qux@example.com,foo,2200-01-03
+---
+Status: 200 OK
+Content-Type: text/html; charset=utf-8
+Set-Cookie: deskd_csrf=(?:.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<title>Hot Desk</title>
+<body>
+<nav>
+    <h1><a href="/about">Hot Desk</a></h1>
+    <a href="/">Your Bookings</a> |
+    <a href="/book">Desk Booking</a>
+</nav>
+<div>
+    <h1>Desk Booking</h1>
+    <img src="/static/floorplan.png" alt="Floor plan">
+    
+        <h2>Current bookings for 03/01/2200</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Desk</th>
+                <th>Booked By</th>
+            </tr>
+            </thead>
+            <tbody>
+            
+                <tr>
+                    <td>bar</td>
+                    <td>me@example.com</td>
+                </tr>
+            
+                <tr>
+                    <td>foo</td>
+                    <td>qux@example.com</td>
+                </tr>
+            
+            </tbody>
+        </table>
+    
+    
+        <p>Sorry no desks are available for 03/01/2200.</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+Booking form page errors when the date is invalid.
+---
+foo
+bar
+---
+baz@example.com,bar,2200-01-01
+baz@example.com,foo,2200-01-02
+baz@example.com,foo,2200-01-03
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/book/2200-01-32
+REQUEST_METHOD=GET
+REMOTE_USER=baz@example.com
+---
+---
+baz@example.com,bar,2200-01-01
+baz@example.com,foo,2200-01-02
+baz@example.com,foo,2200-01-03
+---
+Status: 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+X-Content-Type-Options: nosniff
+
+Bad Request

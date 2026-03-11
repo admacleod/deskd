@@ -1,0 +1,101 @@
+Booking form page renders correctly.
+---
+foo1
+bar
+foo10
+foo2
+foo3
+baz
+qux
+---
+usr1@example.com,foo2,2200-01-03
+usr2@example.com,baz,2200-01-03
+usr3@example.com,foo3,2200-01-03
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/book/2200-01-03
+REQUEST_METHOD=GET
+REMOTE_USER=baz@example.com
+---
+---
+usr1@example.com,foo2,2200-01-03
+usr2@example.com,baz,2200-01-03
+usr3@example.com,foo3,2200-01-03
+---
+Status: 200 OK
+Content-Type: text/html; charset=utf-8
+Set-Cookie: deskd_csrf=(?<CSRF>.+?); Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<title>Hot Desk</title>
+<body>
+<nav>
+    <h1><a href="/about">Hot Desk</a></h1>
+    <a href="/">Your Bookings</a> |
+    <a href="/book">Desk Booking</a>
+</nav>
+<div>
+    <h1>Desk Booking</h1>
+    <img src="/static/floorplan.png" alt="Floor plan">
+    
+        <h2>Current bookings for 03/01/2200</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Desk</th>
+                <th>Booked By</th>
+            </tr>
+            </thead>
+            <tbody>
+            
+                <tr>
+                    <td>baz</td>
+                    <td>usr2@example.com</td>
+                </tr>
+            
+                <tr>
+                    <td>foo2</td>
+                    <td>usr1@example.com</td>
+                </tr>
+            
+                <tr>
+                    <td>foo3</td>
+                    <td>usr3@example.com</td>
+                </tr>
+            
+            </tbody>
+        </table>
+    
+    
+        <h2>Book a desk for 03/01/2200</h2>
+        <form method="POST">
+            <input type="hidden" name="_csrf" value="\k<CSRF>">
+            
+                <input type="radio" id="bar" name="desk" value="bar">
+                <label for="bar">bar</label>
+                <br/>
+            
+                <input type="radio" id="foo1" name="desk" value="foo1">
+                <label for="foo1">foo1</label>
+                <br/>
+            
+                <input type="radio" id="foo10" name="desk" value="foo10">
+                <label for="foo10">foo10</label>
+                <br/>
+            
+                <input type="radio" id="qux" name="desk" value="qux">
+                <label for="qux">qux</label>
+                <br/>
+            
+            <br/>
+            <button type="submit">Book!</button>
+        </form>
+    
+</div>
+</body>
+</html>
