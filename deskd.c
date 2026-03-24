@@ -76,9 +76,13 @@ main(int argc, char *argv[])
 
 	if (strcmp(dbpath, ":memory:") != 0) {
 		/*
-		 * Unveil the directory containing the database, not just
-		 * the file itself. SQLite creates auxiliary files (-journal,
-		 * -wal, -shm) alongside the database that must be accessible.
+		 * Unveil the parent directory of the database file rather
+		 * than the file itself. unveil(2) grants access to a single
+		 * path; SQLite creates auxiliary files alongside the database
+		 * (-journal, -wal, -shm) which are separate paths that would
+		 * be blocked if only the database file were unveiled. When
+		 * the path has no directory component, unveil the current
+		 * working directory instead.
 		 */
 		char *slash = strrchr(dbpath, '/');
 		if (slash != NULL) {
@@ -98,11 +102,17 @@ main(int argc, char *argv[])
 	}
 	free(dbpath);
 
+	/* Lock the unveil list; no further paths can be added. */
 	if (unveil(NULL, NULL) != 0) {
 		fprintf(stderr, "unveil lock failed\n");
 		return 1;
 	}
 
+	/*
+	 * Restrict the process to the syscalls needed for CGI I/O and
+	 * SQLite file operations. fattr is required because SQLite
+	 * manipulates file attributes on its journal and WAL files.
+	 */
 	if (pledge("stdio rpath wpath cpath flock fattr", NULL) != 0) {
 		fprintf(stderr, "pledge failed\n");
 		return 1;
