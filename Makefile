@@ -12,7 +12,10 @@ deskd: ${OBJS}
 .c.o:
 	${CC} ${CFLAGS} -c $<
 
+test: deskd
+	perl test/test.pl ./deskd
+
 clean:
 	rm -f ${OBJS} deskd
 
-.PHONY: clean
+.PHONY: clean test
