@@ -57,9 +57,34 @@ handle_migrate(void)
 int
 main(int argc, char *argv[])
 {
-	const char	*method, *uri, *path;
-	char		*path_copy, *qmark;
+	const char	*method, *uri, *path, *dsn;
+	char		*path_copy, *qmark, *dbpath;
 	size_t		 pathlen;
+
+	/* Sandbox the process before any I/O. */
+	dsn = getenv(DESKD_DB_ENV);
+	if (dsn == NULL || *dsn == '\0')
+		dsn = DESKD_DB_DEFAULT;
+
+	dbpath = dsn_to_path(dsn);
+	if (dbpath != NULL && strcmp(dbpath, ":memory:") != 0) {
+		if (unveil(dbpath, "rwc") != 0) {
+			fprintf(stderr, "unveil: %s\n", dbpath);
+			free(dbpath);
+			return 1;
+		}
+	}
+	free(dbpath);
+
+	if (unveil(NULL, NULL) != 0) {
+		fprintf(stderr, "unveil lock failed\n");
+		return 1;
+	}
+
+	if (pledge("stdio rpath wpath cpath flock", NULL) != 0) {
+		fprintf(stderr, "pledge failed\n");
+		return 1;
+	}
 
 	if (argc > 1 && strcmp(argv[1], "migrate") == 0) {
 		handle_migrate();

@@ -43,6 +43,9 @@ struct desk_list {
 	int	  cap;
 };
 
+/* DSN helpers. */
+char		*dsn_to_path(const char *);
+
 /* Database lifecycle. */
 sqlite3		*db_open(void);
 void		 db_close(sqlite3 *);

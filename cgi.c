@@ -120,7 +120,9 @@ cgi_redirect(int code, const char *location)
 	cgi_header("Content-Type", "text/html; charset=utf-8");
 	printf("Location: %s\n", location);
 	cgi_end_headers();
-	printf("<a href=\"%s\">%s</a>.\n\n", location, status_text(code));
+	printf("<a href=\"");
+	cgi_html_escape(location);
+	printf("\">%s</a>.\n\n", status_text(code));
 }
 
 /*

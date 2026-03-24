@@ -101,7 +101,9 @@ handle_bookings(void)
 			date_display(&tm, display, sizeof(display));
 			printf("            \n");
 			printf("                <tr>\n");
-			printf("                    <td>%s</td>\n", display);
+			printf("                    <td>");
+			cgi_html_escape(display);
+			printf("</td>\n");
 			printf("                    <td>");
 			cgi_html_escape(bl.items[i].desk);
 			printf("</td>\n");
