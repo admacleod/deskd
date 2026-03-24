@@ -1,0 +1,1 @@
+SELECT user, desk, day FROM bookings WHERE user = ? AND day >= DATE() ORDER BY day ASC

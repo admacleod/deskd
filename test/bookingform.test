@@ -42,60 +42,47 @@ Set-Cookie: deskd_csrf=REGEX{(?<CSRF>.+?)}; Path=/; Max-Age=3600; HttpOnly; Secu
 <div>
     <h1>Desk Booking</h1>
     <img src="/static/floorplan.png" alt="Floor plan">
-    
-        <h2>Current bookings for 03/01/2200</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Desk</th>
-                <th>Booked By</th>
-            </tr>
-            </thead>
-            <tbody>
-            
-                <tr>
-                    <td>baz</td>
-                    <td>usr2@example.com</td>
-                </tr>
-            
-                <tr>
-                    <td>foo2</td>
-                    <td>usr1@example.com</td>
-                </tr>
-            
-                <tr>
-                    <td>foo3</td>
-                    <td>usr3@example.com</td>
-                </tr>
-            
-            </tbody>
-        </table>
-    
-    
-        <h2>Book a desk for 03/01/2200</h2>
-        <form method="POST">
-            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
-            
-                <input type="radio" id="bar" name="desk" value="bar">
-                <label for="bar">bar</label>
-                <br/>
-            
-                <input type="radio" id="foo1" name="desk" value="foo1">
-                <label for="foo1">foo1</label>
-                <br/>
-            
-                <input type="radio" id="foo10" name="desk" value="foo10">
-                <label for="foo10">foo10</label>
-                <br/>
-            
-                <input type="radio" id="qux" name="desk" value="qux">
-                <label for="qux">qux</label>
-                <br/>
-            
-            <br/>
-            <button type="submit">Book!</button>
-        </form>
-    
+    <h2>Current bookings for 03/01/2200</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Desk</th>
+            <th>Booked By</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>baz</td>
+            <td>usr2@example.com</td>
+        </tr>
+        <tr>
+            <td>foo2</td>
+            <td>usr1@example.com</td>
+        </tr>
+        <tr>
+            <td>foo3</td>
+            <td>usr3@example.com</td>
+        </tr>
+        </tbody>
+    </table>
+    <h2>Book a desk for 03/01/2200</h2>
+    <form method="POST">
+        <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
+        <input type="radio" id="bar" name="desk" value="bar">
+        <label for="bar">bar</label>
+        <br/>
+        <input type="radio" id="foo1" name="desk" value="foo1">
+        <label for="foo1">foo1</label>
+        <br/>
+        <input type="radio" id="foo10" name="desk" value="foo10">
+        <label for="foo10">foo10</label>
+        <br/>
+        <input type="radio" id="qux" name="desk" value="qux">
+        <label for="qux">qux</label>
+        <br/>
+        <br/>
+        <button type="submit">Book!</button>
+    </form>
 </div>
 </body>
 </html>

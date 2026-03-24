@@ -24,6 +24,5 @@ me@example.com,foo,2200-01-03
 Status: 409 Conflict
 Content-Type: text/plain; charset=utf-8
 Set-Cookie: deskd_csrf=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict
-X-Content-Type-Options: nosniff
 
 Conflict

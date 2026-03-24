@@ -1,0 +1,1 @@
+DELETE FROM bookings WHERE user = ? AND desk = ? AND day = ?

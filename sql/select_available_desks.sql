@@ -1,0 +1,1 @@
+SELECT desk FROM desks WHERE desk NOT IN (SELECT desk FROM bookings WHERE day = ?) ORDER BY desk COLLATE "natural"

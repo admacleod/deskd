@@ -1,0 +1,1 @@
+SELECT user, desk, day FROM bookings WHERE day = ? ORDER BY desk COLLATE "natural"
