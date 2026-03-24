@@ -103,7 +103,7 @@ main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (pledge("stdio rpath wpath cpath flock", NULL) != 0) {
+	if (pledge("stdio rpath wpath cpath flock fattr", NULL) != 0) {
 		fprintf(stderr, "pledge failed\n");
 		return 1;
 	}
