@@ -58,7 +58,7 @@ handle_cancel(void)
 	content_length = 0;
 	if (getenv("CONTENT_LENGTH") != NULL)
 		content_length = strtol(getenv("CONTENT_LENGTH"), NULL, 10);
-	if (content_length <= 0) {
+	if (content_length <= 0 || content_length > MAX_BODY) {
 		cgi_error(400);
 		return;
 	}

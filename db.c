@@ -159,10 +159,10 @@ mkdirs(const char *filepath)
  * Open the SQLite database specified by the DESKD_DB environment
  * variable, falling back to DESKD_DB_DEFAULT if unset. Creates
  * parent directories for the database file if they do not exist.
- * Registers the "natural" collation used by desk ordering queries
- * and sets a 5-second busy timeout to handle concurrent access
- * from the CGI model. Returns an open database handle or NULL on
- * failure; errors are logged to stderr.
+ * Registers the "natural" collation used by desk ordering queries,
+ * enables foreign key constraints, and sets a 5-second busy timeout
+ * to handle concurrent access from the CGI model. Returns an open
+ * database handle or NULL on failure; errors are logged to stderr.
  */
 sqlite3 *
 db_open(void)
@@ -202,8 +202,9 @@ db_open(void)
 		return NULL;
 	}
 
-	/* Set busy timeout. */
-	sqlite3_exec(db, "PRAGMA busy_timeout = 5000", NULL, NULL, NULL);
+	/* Set busy timeout and enable foreign key constraints. */
+	sqlite3_busy_timeout(db, 5000);
+	sqlite3_exec(db, "PRAGMA foreign_keys = ON", NULL, NULL, NULL);
 
 	return db;
 }
@@ -275,8 +276,12 @@ booking_list_add(struct booking_list *bl, const char *user, const char *desk,
 	bl->items[bl->count].day = strdup(day);
 	if (bl->items[bl->count].user == NULL ||
 	    bl->items[bl->count].desk == NULL ||
-	    bl->items[bl->count].day == NULL)
+	    bl->items[bl->count].day == NULL) {
+		free(bl->items[bl->count].user);
+		free(bl->items[bl->count].desk);
+		free(bl->items[bl->count].day);
 		return -1;
+	}
 
 	bl->count++;
 	return 0;
@@ -482,8 +487,8 @@ db_query_available_desks(sqlite3 *db, const char *day, struct desk_list *dl)
 }
 
 /*
- * Insert a booking for the given user, desk, and day. Enables
- * foreign key constraints so that an unknown desk is rejected.
+ * Insert a booking for the given user, desk, and day. Foreign key
+ * constraints (enabled at connection open) reject unknown desks.
  * Returns 0 on success, or the SQLite extended error code on
  * failure. Callers should check for SQLITE_CONSTRAINT_FOREIGNKEY
  * (unknown desk) and SQLITE_CONSTRAINT_UNIQUE (duplicate booking)
@@ -494,17 +499,7 @@ db_insert_booking(sqlite3 *db, const char *user, const char *desk,
     const char *day)
 {
 	sqlite3_stmt	*stmt;
-	char		*err;
 	int		 rc;
-
-	/* Enable foreign key constraints. */
-	err = NULL;
-	if (sqlite3_exec(db, "PRAGMA foreign_keys = ON", NULL, NULL,
-	    &err) != SQLITE_OK) {
-		fprintf(stderr, "enable foreign keys: %s\n", err);
-		sqlite3_free(err);
-		return -1;
-	}
 
 	if (sqlite3_prepare_v2(db, sql_insert_booking, -1, &stmt,
 	    NULL) != SQLITE_OK) {

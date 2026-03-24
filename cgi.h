@@ -28,6 +28,7 @@
 #define CSRF_KEY	"_csrf"
 #define DESK_KEY	"desk"
 #define DATE_KEY	"day"
+#define MAX_BODY	4096
 
 /* CGI response helpers. */
 void	cgi_status(int);

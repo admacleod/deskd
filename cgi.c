@@ -134,6 +134,7 @@ cgi_redirect_csrf(int code, const char *location)
 	cgi_header("Content-Type", "text/plain; charset=utf-8");
 	printf("Location: %s\n", location);
 	cgi_csrf_clear();
+	cgi_end_headers();
 }
 
 /*
