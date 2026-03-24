@@ -63,11 +63,18 @@ main(int argc, char *argv[])
 
 	/* Sandbox the process before any I/O. */
 	dsn = getenv(DESKD_DB_ENV);
-	if (dsn == NULL || *dsn == '\0')
-		dsn = DESKD_DB_DEFAULT;
+	if (dsn == NULL || *dsn == '\0') {
+		fprintf(stderr, "DESKD_DB environment variable not set\n");
+		return 1;
+	}
 
 	dbpath = dsn_to_path(dsn);
-	if (dbpath != NULL && strcmp(dbpath, ":memory:") != 0) {
+	if (dbpath == NULL) {
+		fprintf(stderr, "cannot resolve database path\n");
+		return 1;
+	}
+
+	if (strcmp(dbpath, ":memory:") != 0) {
 		if (unveil(dbpath, "rwc") != 0) {
 			fprintf(stderr, "unveil: %s\n", dbpath);
 			free(dbpath);
