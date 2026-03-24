@@ -31,6 +31,11 @@
 #include "book.h"
 #include "cancel.h"
 
+/*
+ * Run database migrations when invoked as "deskd migrate".
+ * This must be called once before the first CGI request to create
+ * the schema. Exits with status 1 on failure.
+ */
 static void
 handle_migrate(void)
 {

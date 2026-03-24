@@ -30,6 +30,12 @@ static const char html_head[] = {
 #embed "html/head.html"
 };
 
+/*
+ * Handle GET /. Displays the authenticated user's upcoming bookings
+ * with a cancellation form for each. Requires the REMOTE_USER
+ * environment variable to be set by the web server's authentication
+ * layer; returns 401 Unauthorized if missing.
+ */
 void
 handle_bookings(void)
 {

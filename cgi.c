@@ -26,7 +26,10 @@
 #include "compat.h"
 #include "cgi.h"
 
-/* Status code to reason phrase mapping. */
+/*
+ * Map an HTTP status code to its reason phrase.
+ * Returns "Unknown" for unrecognised codes.
+ */
 static const char *
 status_text(int code)
 {
@@ -52,18 +55,28 @@ status_text(int code)
 	}
 }
 
+/*
+ * Output the CGI Status header line.
+ */
 void
 cgi_status(int code)
 {
 	printf("Status: %d %s\n", code, status_text(code));
 }
 
+/*
+ * Output a single CGI response header.
+ */
 void
 cgi_header(const char *name, const char *value)
 {
 	printf("%s: %s\n", name, value);
 }
 
+/*
+ * Terminate the CGI header block with a blank line.
+ * Everything written to stdout after this is the response body.
+ */
 void
 cgi_end_headers(void)
 {
@@ -281,6 +294,8 @@ cgi_cookie_get(const char *name)
 
 /*
  * Set the CSRF cookie with the given token value.
+ * The cookie is scoped to the site root, valid for one hour,
+ * and restricted via HttpOnly, Secure, and SameSite=Strict.
  */
 void
 cgi_csrf_set(const char *token)
@@ -291,7 +306,9 @@ cgi_csrf_set(const char *token)
 }
 
 /*
- * Clear the CSRF cookie (set Max-Age=0).
+ * Clear the CSRF cookie by setting Max-Age=0, instructing the
+ * browser to delete it. Called after a CSRF token is consumed
+ * to prevent reuse.
  */
 void
 cgi_csrf_clear(void)
@@ -302,8 +319,9 @@ cgi_csrf_clear(void)
 }
 
 /*
- * Generate a CSRF token using arc4random_buf.
- * Returns a newly allocated hex string.
+ * Generate a CSRF token using arc4random_buf (available in OpenBSD
+ * base and macOS). Returns a newly allocated 32-character hex string
+ * that must be freed by the caller, or NULL on allocation failure.
  */
 char *
 cgi_csrf_generate(void)
@@ -323,8 +341,11 @@ cgi_csrf_generate(void)
 }
 
 /*
- * Check CSRF token from form body against cookie.
- * Uses constant-time comparison. Returns 1 if valid, 0 otherwise.
+ * Validate a CSRF token from a form submission against the token
+ * stored in the HTTP_COOKIE header. Uses timingsafe_bcmp
+ * (available in OpenBSD base) for constant-time comparison to
+ * prevent timing side-channel attacks. Returns 1 if the tokens
+ * match, 0 if they differ or either token is missing.
  */
 int
 cgi_csrf_check(const char *form_token)
@@ -353,7 +374,9 @@ cgi_csrf_check(const char *form_token)
 }
 
 /*
- * Escape HTML special characters and write to stdout.
+ * Escape HTML special characters (&, <, >, ", ') and write the
+ * result directly to stdout. Used when interpolating user-supplied
+ * values into HTML output to prevent cross-site scripting.
  */
 void
 cgi_html_escape(const char *s)
@@ -384,9 +407,11 @@ cgi_html_escape(const char *s)
 }
 
 /*
- * Parse a date string in YYYY-MM-DD format.
- * Returns 0 on success, -1 on failure.
- * Validates that the date is a real calendar date.
+ * Parse a date string in YYYY-MM-DD format into a struct tm.
+ * Returns 0 on success, -1 on failure. Validates that the date
+ * represents a real calendar date by normalising via timegm and
+ * checking the fields match; this catches inputs like "2200-01-32"
+ * which strptime alone would accept.
  */
 int
 date_parse(const char *s, struct tm *tm)
@@ -419,8 +444,10 @@ date_parse(const char *s, struct tm *tm)
 }
 
 /*
- * Check if a date is in the past (before today UTC).
- * Returns 1 if the date is in the past, 0 otherwise.
+ * Check if a date is strictly before today in UTC. Both the
+ * current time and the input date are truncated to midnight to
+ * allow bookings for the current day. Returns 1 if the date is
+ * in the past, 0 otherwise.
  */
 int
 date_is_past(const struct tm *tm)
@@ -445,7 +472,8 @@ date_is_past(const struct tm *tm)
 }
 
 /*
- * Format a date as YYYY-MM-DD.
+ * Format a date as YYYY-MM-DD into buf. This is the canonical
+ * storage format used in the SQLite database.
  */
 void
 date_format(const struct tm *tm, char *buf, size_t len)
@@ -454,7 +482,8 @@ date_format(const struct tm *tm, char *buf, size_t len)
 }
 
 /*
- * Format a date for display as DD/MM/YYYY.
+ * Format a date as DD/MM/YYYY into buf for human-readable display
+ * in the web interface.
  */
 void
 date_display(const struct tm *tm, char *buf, size_t len)

@@ -28,6 +28,20 @@
 #include "db.h"
 #include "book.h"
 
+/*
+ * Handle POST /book/<date>. Validates the CSRF token, parses the
+ * date from the URI path, and inserts a booking for the desk
+ * specified in the form body. On success, redirects to / with 303.
+ *
+ * Error responses:
+ *   401 - REMOTE_USER not set
+ *   400 - missing/invalid body, bad date, past date, missing desk,
+ *         or unknown desk (foreign key violation)
+ *   403 - CSRF token mismatch
+ *   409 - duplicate booking (unique constraint violation on
+ *         desk+day or user+day)
+ *   500 - database or allocation failure
+ */
 void
 handle_book(const char *day_param)
 {

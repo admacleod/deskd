@@ -95,8 +95,10 @@ dsn_to_path(const char *dsn)
 }
 
 /*
- * Create parent directories for a file path.
- * Similar to mkdir -p for the directory portion.
+ * Create parent directories for a file path, similar to mkdir -p.
+ * Only the directory portion of the path is created; the final
+ * component is assumed to be a filename. Returns 0 on success
+ * or -1 on failure. Existing directories are not an error.
  */
 static int
 mkdirs(const char *filepath)
@@ -154,9 +156,13 @@ mkdirs(const char *filepath)
 }
 
 /*
- * Open the database using the DESKD_DB environment variable.
- * Creates parent directories and the database file if needed.
- * Registers the natural sort collation.
+ * Open the SQLite database specified by the DESKD_DB environment
+ * variable, falling back to DESKD_DB_DEFAULT if unset. Creates
+ * parent directories for the database file if they do not exist.
+ * Registers the "natural" collation used by desk ordering queries
+ * and sets a 5-second busy timeout to handle concurrent access
+ * from the CGI model. Returns an open database handle or NULL on
+ * failure; errors are logged to stderr.
  */
 sqlite3 *
 db_open(void)
@@ -202,6 +208,9 @@ db_open(void)
 	return db;
 }
 
+/*
+ * Close the database handle. Safe to call with NULL.
+ */
 void
 db_close(sqlite3 *db)
 {
@@ -209,6 +218,12 @@ db_close(sqlite3 *db)
 		sqlite3_close(db);
 }
 
+/*
+ * Run database migrations to create the desks and bookings tables
+ * if they do not already exist. Uses CREATE TABLE IF NOT EXISTS
+ * so it is safe to call on every startup. Returns 0 on success,
+ * -1 on failure.
+ */
 int
 db_migrate(sqlite3 *db)
 {
@@ -232,6 +247,12 @@ db_migrate(sqlite3 *db)
 	return 0;
 }
 
+/*
+ * Append a booking to a dynamically growing booking list.
+ * The list doubles in capacity when full, starting at 8 entries.
+ * All strings are copied via strdup. Returns 0 on success, -1 if
+ * any allocation fails.
+ */
 static int
 booking_list_add(struct booking_list *bl, const char *user, const char *desk,
     const char *day)
@@ -261,6 +282,10 @@ booking_list_add(struct booking_list *bl, const char *user, const char *desk,
 	return 0;
 }
 
+/*
+ * Free all memory owned by a booking list and reset its fields
+ * to zero so it can be safely reused or ignored.
+ */
 void
 booking_list_free(struct booking_list *bl)
 {
@@ -277,6 +302,12 @@ booking_list_free(struct booking_list *bl)
 	bl->cap = 0;
 }
 
+/*
+ * Append a desk name to a dynamically growing desk list.
+ * The list doubles in capacity when full, starting at 8 entries.
+ * The name is copied via strdup. Returns 0 on success, -1 if
+ * any allocation fails.
+ */
 static int
 desk_list_add(struct desk_list *dl, const char *desk)
 {
@@ -301,6 +332,10 @@ desk_list_add(struct desk_list *dl, const char *desk)
 	return 0;
 }
 
+/*
+ * Free all memory owned by a desk list and reset its fields
+ * to zero so it can be safely reused or ignored.
+ */
 void
 desk_list_free(struct desk_list *dl)
 {
@@ -315,7 +350,9 @@ desk_list_free(struct desk_list *dl)
 }
 
 /*
- * Query bookings for a given user (future bookings only).
+ * Query future bookings for a given user, populating bl with the
+ * results ordered by date. The caller must call booking_list_free
+ * when done. Returns 0 on success, -1 on failure.
  */
 int
 db_query_bookings(sqlite3 *db, const char *user, struct booking_list *bl)
@@ -357,7 +394,10 @@ db_query_bookings(sqlite3 *db, const char *user, struct booking_list *bl)
 }
 
 /*
- * Query all bookings for a given day, ordered by desk with natural sort.
+ * Query all bookings for a given day, populating bl with results
+ * ordered by desk name using natural sort collation. The caller
+ * must call booking_list_free when done. Returns 0 on success,
+ * -1 on failure.
  */
 int
 db_query_day_bookings(sqlite3 *db, const char *day, struct booking_list *bl)
@@ -399,7 +439,10 @@ db_query_day_bookings(sqlite3 *db, const char *day, struct booking_list *bl)
 }
 
 /*
- * Query available desks for a given day, ordered with natural sort.
+ * Query desks that have no booking on the given day, populating
+ * dl with results ordered by desk name using natural sort
+ * collation. The caller must call desk_list_free when done.
+ * Returns 0 on success, -1 on failure.
  */
 int
 db_query_available_desks(sqlite3 *db, const char *day, struct desk_list *dl)
@@ -439,9 +482,12 @@ db_query_available_desks(sqlite3 *db, const char *day, struct desk_list *dl)
 }
 
 /*
- * Insert a booking. Returns 0 on success, or the SQLite extended
- * error code on failure (useful for distinguishing constraint
- * violations).
+ * Insert a booking for the given user, desk, and day. Enables
+ * foreign key constraints so that an unknown desk is rejected.
+ * Returns 0 on success, or the SQLite extended error code on
+ * failure. Callers should check for SQLITE_CONSTRAINT_FOREIGNKEY
+ * (unknown desk) and SQLITE_CONSTRAINT_UNIQUE (duplicate booking)
+ * to distinguish user errors from internal failures.
  */
 int
 db_insert_booking(sqlite3 *db, const char *user, const char *desk,

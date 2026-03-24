@@ -26,6 +26,17 @@
 #include "db.h"
 #include "cancel.h"
 
+/*
+ * Handle POST /. Validates the CSRF token, then deletes the
+ * booking identified by the desk and day fields in the form body.
+ * On success, redirects to / with 303.
+ *
+ * Error responses:
+ *   401 - REMOTE_USER not set
+ *   400 - missing/invalid body, bad date, past date, or missing desk
+ *   403 - CSRF token mismatch
+ *   500 - database or allocation failure
+ */
 void
 handle_cancel(void)
 {
