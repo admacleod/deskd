@@ -195,8 +195,8 @@ Everything else uses C libraries available in OpenBSD base:
 - `time.h` — date parsing and formatting (`strptime`, `strftime`, `timegm`)
 - `ctype.h` — character classification for URL decoding and natural sort
 - `arc4random_buf` — CSRF token generation (OpenBSD base, also available on macOS)
-- `timingsafe_bcmp` — constant-time comparison for CSRF validation (OpenBSD base;
-  shim provided for other platforms via `compat.h`)
+- `timingsafe_bcmp` — constant-time comparison for CSRF validation (OpenBSD base,
+  also available on macOS)
 - `reallocarray` — overflow-checked array allocation (OpenBSD base; shim provided
   for platforms that lack it via `compat.h`)
 

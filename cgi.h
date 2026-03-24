@@ -40,7 +40,6 @@ void	cgi_redirect(int, const char *);
 void	cgi_redirect_csrf(int, const char *);
 
 /* HTML output helpers. */
-void	cgi_html_head(void);
 void	cgi_html_escape(const char *);
 
 /* Form and query string parsing. */
