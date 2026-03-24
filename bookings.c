@@ -44,7 +44,7 @@ handle_bookings(void)
 	sqlite3			*db;
 	struct booking_list	 bl;
 	struct tm		 tm;
-	char			 display[16], datestr[16];
+	char			 display[16];
 	int			 i;
 
 	user = getenv("REMOTE_USER");
@@ -99,7 +99,6 @@ handle_bookings(void)
 			memset(&tm, 0, sizeof(tm));
 			date_parse(bl.items[i].day, &tm);
 			date_display(&tm, display, sizeof(display));
-			date_format(&tm, datestr, sizeof(datestr));
 			printf("            \n");
 			printf("                <tr>\n");
 			printf("                    <td>%s</td>\n", display);
@@ -120,7 +119,7 @@ handle_bookings(void)
 			printf("\">\n");
 			printf("                            "
 			    "<input type=\"hidden\" name=\"%s\" "
-			    "value=\"%s\">\n", DATE_KEY, datestr);
+			    "value=\"%s\">\n", DATE_KEY, bl.items[i].day);
 			printf("                            "
 			    "<button type=\"submit\">Cancel</button>\n");
 			printf("                        </form>\n");
