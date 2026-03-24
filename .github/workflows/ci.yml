@@ -14,10 +14,6 @@ jobs:
         with:
           prepare: |
             pkg_add sqlite3
-          run: echo "VM ready"
-      - name: build
-        shell: openbsd {0}
-        run: make
-      - name: test
-        shell: openbsd {0}
-        run: perl test/test.pl ./deskd
+          run: |
+            make
+            perl test/test.pl ./deskd
