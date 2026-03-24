@@ -40,7 +40,7 @@ void
 handle_dateform(void)
 {
 	const char	*uri;
-	char		*day, redirect[256];
+	char		*day, redirect[256], datestr[16];
 	struct tm	 tm;
 
 	uri = getenv("REQUEST_URI");
@@ -62,7 +62,8 @@ handle_dateform(void)
 		return;
 	}
 
-	snprintf(redirect, sizeof(redirect), "/book/%s", day);
+	date_format(&tm, datestr, sizeof(datestr));
 	free(day);
+	snprintf(redirect, sizeof(redirect), "/book/%s", datestr);
 	cgi_redirect(302, redirect);
 }

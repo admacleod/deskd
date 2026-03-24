@@ -107,7 +107,9 @@ handle_bookingform(const char *day_param)
 	    "alt=\"Floor plan\">\n");
 
 	if (bl.count > 0) {
-		printf("    <h2>Current bookings for %s</h2>\n", display);
+		printf("    <h2>Current bookings for ");
+		cgi_html_escape(display);
+		printf("</h2>\n");
 		printf("    <table>\n");
 		printf("        <thead>\n");
 		printf("        <tr>\n");
@@ -131,7 +133,9 @@ handle_bookingform(const char *day_param)
 	}
 
 	if (dl.count > 0) {
-		printf("    <h2>Book a desk for %s</h2>\n", display);
+		printf("    <h2>Book a desk for ");
+		cgi_html_escape(display);
+		printf("</h2>\n");
 		printf("    <form method=\"POST\">\n");
 		printf("        <input type=\"hidden\" name=\"%s\" "
 		    "value=\"%s\">\n", CSRF_KEY, csrf);
@@ -153,8 +157,9 @@ handle_bookingform(const char *day_param)
 		    "Book!</button>\n");
 		printf("    </form>\n");
 	} else {
-		printf("    <p>Sorry no desks are available for "
-		    "%s.</p>\n", display);
+		printf("    <p>Sorry no desks are available for ");
+		cgi_html_escape(display);
+		printf(".</p>\n");
 	}
 
 	printf("</div>\n");

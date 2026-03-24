@@ -7,7 +7,7 @@ SRCS = deskd.c cgi.c db.c natural.c about.c dateform.c bookings.c \
 OBJS = ${SRCS:.c=.o}
 
 deskd: ${OBJS}
-	${CC} ${LDFLAGS} -o $@ ${OBJS}
+	${CC} -o $@ ${OBJS} ${LDFLAGS}
 
 .c.o:
 	${CC} ${CFLAGS} -c $<

@@ -69,7 +69,7 @@ static const char sql_delete_booking[] = {
  * Strips "file:" prefix and "?" query parameters.
  * Returns a newly allocated string or NULL.
  */
-static char *
+char *
 dsn_to_path(const char *dsn)
 {
 	const char	*start, *end;
@@ -172,11 +172,8 @@ db_open(void)
 	sqlite3		*db;
 
 	dsn = getenv(DESKD_DB_ENV);
-	if (dsn == NULL || *dsn == '\0') {
+	if (dsn == NULL || *dsn == '\0')
 		dsn = DESKD_DB_DEFAULT;
-		fprintf(stderr, "missing DSN definition, using fallback "
-		    "DSN \"%s\"\n", DESKD_DB_DEFAULT);
-	}
 
 	path = dsn_to_path(dsn);
 	if (path != NULL && strcmp(path, ":memory:") != 0) {
