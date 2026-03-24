@@ -23,7 +23,6 @@
 #include <sqlite3.h>
 
 #define DESKD_DB_ENV		"DESKD_DB"
-#define DESKD_DB_DEFAULT	"file:/db/deskd.db?cache=shared"
 
 struct booking {
 	char	*user;

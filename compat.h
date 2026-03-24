@@ -36,7 +36,8 @@
 
 /*
  * reallocarray - safe realloc with overflow checking.
- * Available in OpenBSD and glibc >= 2.26; provide a shim elsewhere.
+ * Available in OpenBSD and glibc >= 2.26; provide a shim elsewhere
+ * (including macOS/Apple libc which does not provide it).
  */
 #if !defined(__OpenBSD__) && !defined(__GLIBC__)
 static inline void *

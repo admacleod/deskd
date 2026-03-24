@@ -17,11 +17,9 @@
  * along with deskd. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include <sqlite3.h>
 
@@ -95,92 +93,23 @@ dsn_to_path(const char *dsn)
 }
 
 /*
- * Create parent directories for a file path, similar to mkdir -p.
- * Only the directory portion of the path is created; the final
- * component is assumed to be a filename. Returns 0 on success
- * or -1 on failure. Existing directories are not an error.
- */
-static int
-mkdirs(const char *filepath)
-{
-	char		*copy, *p;
-	struct stat	 sb;
-
-	copy = strdup(filepath);
-	if (copy == NULL)
-		return -1;
-
-	/* Find the last / to get directory portion. */
-	p = strrchr(copy, '/');
-	if (p == NULL) {
-		free(copy);
-		return 0;
-	}
-	*p = '\0';
-
-	if (stat(copy, &sb) == 0) {
-		free(copy);
-		return 0;
-	}
-
-	/* Walk the path creating directories. */
-	p = copy;
-	if (*p == '/')
-		p++;
-	while (*p != '\0') {
-		while (*p != '/' && *p != '\0')
-			p++;
-		if (*p == '/') {
-			*p = '\0';
-			if (stat(copy, &sb) != 0) {
-				if (mkdir(copy, 0777) != 0 &&
-				    errno != EEXIST) {
-					free(copy);
-					return -1;
-				}
-			}
-			*p = '/';
-			p++;
-		}
-	}
-
-	if (stat(copy, &sb) != 0) {
-		if (mkdir(copy, 0777) != 0 && errno != EEXIST) {
-			free(copy);
-			return -1;
-		}
-	}
-
-	free(copy);
-	return 0;
-}
-
-/*
  * Open the SQLite database specified by the DESKD_DB environment
- * variable, falling back to DESKD_DB_DEFAULT if unset. Creates
- * parent directories for the database file if they do not exist.
- * Registers the "natural" collation used by desk ordering queries,
- * enables foreign key constraints, and sets a 5-second busy timeout
- * to handle concurrent access from the CGI model. Returns an open
+ * variable. The parent directory must already exist. Registers
+ * the "natural" collation used by desk ordering queries, enables
+ * foreign key constraints, and sets a 5-second busy timeout to
+ * handle concurrent access from the CGI model. Returns an open
  * database handle or NULL on failure; errors are logged to stderr.
  */
 sqlite3 *
 db_open(void)
 {
 	const char	*dsn;
-	char		*path;
 	sqlite3		*db;
 
 	dsn = getenv(DESKD_DB_ENV);
-	if (dsn == NULL || *dsn == '\0')
-		dsn = DESKD_DB_DEFAULT;
-
-	path = dsn_to_path(dsn);
-	if (path != NULL && strcmp(path, ":memory:") != 0) {
-		mkdirs(path);
-		free(path);
-	} else {
-		free(path);
+	if (dsn == NULL || *dsn == '\0') {
+		fprintf(stderr, "DESKD_DB not set\n");
+		return NULL;
 	}
 
 	if (sqlite3_open(dsn, &db) != SQLITE_OK) {

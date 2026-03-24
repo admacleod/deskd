@@ -20,11 +20,11 @@ make
 The build uses `cc` with `-std=c23` and links against `-lsqlite3`.
 All other dependencies are satisfied by the C libraries available in OpenBSD base.
 
-On macOS (for development and testing), install sqlite3 via Homebrew and build
+On macOS (for development and testing), install sqlite3 via MacPorts and build
 with the appropriate include and library paths:
 ```
-brew install sqlite3
-make CFLAGS="-I$(brew --prefix sqlite3)/include" LDFLAGS="-L$(brew --prefix sqlite3)/lib"
+port install sqlite3
+make CFLAGS="-I/opt/local/include" LDFLAGS="-L/opt/local/lib -lsqlite3"
 ```
 
 A `compat.h` header provides shims for OpenBSD-specific functions (`reallocarray`,
@@ -46,9 +46,12 @@ This is safe to run repeatedly as it uses `CREATE TABLE IF NOT EXISTS`.
 
 The configuration options are as follows:
 
-| Env        | Type     | Default                            | Description                                                |
-|------------|----------|------------------------------------|------------------------------------------------------------|
-| `DESKD_DB` | `string` | `"file:/db/deskd.db?cache=shared"` | The DSN used to access a sqlite database storing bookings. |
+| Env        | Type     | Description                                                |
+|------------|----------|------------------------------------------------------------|
+| `DESKD_DB` | `string` | **Required.** The DSN used to access a sqlite database storing bookings. |
+
+The parent directory of the database file must already exist and be writable
+by the application. `deskd` will not create directories automatically.
 
 ### Adding desks
 
@@ -191,7 +194,6 @@ Everything else uses C libraries available in OpenBSD base:
 - `stdio.h`, `stdlib.h`, `string.h` — standard I/O, memory, and string handling
 - `time.h` — date parsing and formatting (`strptime`, `strftime`, `timegm`)
 - `ctype.h` — character classification for URL decoding and natural sort
-- `sys/stat.h` — directory creation for database path
 - `arc4random_buf` — CSRF token generation (OpenBSD base, also available on macOS)
 - `timingsafe_bcmp` — constant-time comparison for CSRF validation (OpenBSD base;
   shim provided for other platforms via `compat.h`)
