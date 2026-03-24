@@ -30,6 +30,12 @@ static const char dateform_page[] = {
 	, '\0'
 };
 
+/*
+ * Handle GET /book. If no "day" query parameter is present, renders
+ * the date picker form. If a valid date is supplied, redirects to
+ * /book/<date> via 302 Found. Returns 400 Bad Request if the date
+ * cannot be parsed.
+ */
 void
 handle_dateform(void)
 {

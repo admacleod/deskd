@@ -30,6 +30,12 @@ static const char html_head[] = {
 #embed "html/head.html"
 };
 
+/*
+ * Handle GET /book/<date>. Displays current bookings for the given
+ * date and a form to book an available desk. If all desks are
+ * booked, shows a message instead of the form. Requires
+ * REMOTE_USER; returns 401 if missing, 400 if the date is invalid.
+ */
 void
 handle_bookingform(const char *day_param)
 {

@@ -27,6 +27,10 @@ static const char about_page[] = {
 	, '\0'
 };
 
+/*
+ * Handle GET /about. Renders the static about page containing
+ * licence and attribution information.
+ */
 void
 handle_about(void)
 {
