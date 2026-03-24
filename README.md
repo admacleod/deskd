@@ -20,11 +20,14 @@ make
 The build uses `cc` with `-std=c23` and links against `-lsqlite3`.
 All other dependencies are satisfied by the C libraries available in OpenBSD base.
 
-On macOS (for development and testing), install sqlite3 via MacPorts and build
-with the appropriate include and library paths:
+The binary is statically linked by default so it can run inside an OpenBSD
+httpd chroot without access to shared libraries.
+
+On macOS (for development and testing), static linking is not supported.
+Install sqlite3 via MacPorts and build with static linking disabled:
 ```
 port install sqlite3
-make CFLAGS="-I/opt/local/include" LDFLAGS="-L/opt/local/lib -lsqlite3"
+make LDFLAGS_STATIC= CFLAGS="-I/opt/local/include" LDFLAGS="-L/opt/local/lib -lsqlite3"
 ```
 
 A `compat.h` header provides shims for OpenBSD-specific functions (`reallocarray`,
