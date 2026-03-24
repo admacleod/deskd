@@ -1,0 +1,1 @@
+INSERT INTO bookings (user, desk, day) VALUES (?,?,?)

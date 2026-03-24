@@ -22,6 +22,5 @@ baz@example.com,foo,2200-01-02
 Status: 400 Bad Request
 Content-Type: text/plain; charset=utf-8
 Set-Cookie: deskd_csrf=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict
-X-Content-Type-Options: nosniff
 
 Bad Request

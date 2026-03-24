@@ -35,33 +35,26 @@ Set-Cookie: deskd_csrf=REGEX{(?:.+?)}; Path=/; Max-Age=3600; HttpOnly; Secure; S
 <div>
     <h1>Desk Booking</h1>
     <img src="/static/floorplan.png" alt="Floor plan">
-    
-        <h2>Current bookings for 03/01/2200</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Desk</th>
-                <th>Booked By</th>
-            </tr>
-            </thead>
-            <tbody>
-            
-                <tr>
-                    <td>bar</td>
-                    <td>me@example.com</td>
-                </tr>
-            
-                <tr>
-                    <td>foo</td>
-                    <td>qux@example.com</td>
-                </tr>
-            
-            </tbody>
-        </table>
-    
-    
-        <p>Sorry no desks are available for 03/01/2200.</p>
-    
+    <h2>Current bookings for 03/01/2200</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Desk</th>
+            <th>Booked By</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>bar</td>
+            <td>me@example.com</td>
+        </tr>
+        <tr>
+            <td>foo</td>
+            <td>qux@example.com</td>
+        </tr>
+        </tbody>
+    </table>
+    <p>Sorry no desks are available for 03/01/2200.</p>
 </div>
 </body>
 </html>

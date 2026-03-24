@@ -20,6 +20,5 @@ baz@example.com,foo,2200-01-02
 ---
 Status: 401 Unauthorized
 Content-Type: text/plain; charset=utf-8
-X-Content-Type-Options: nosniff
 
 Unauthorized

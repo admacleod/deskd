@@ -36,44 +36,33 @@ Set-Cookie: deskd_csrf=REGEX{(?<CSRF>.+?)}; Path=/; Max-Age=3600; HttpOnly; Secu
 <div>
     <h1>Desk Booking</h1>
     <img src="/static/floorplan.png" alt="Floor plan">
-    
-    
-        <h2>Book a desk for 03/01/2200</h2>
-        <form method="POST">
-            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
-            
-                <input type="radio" id="bar" name="desk" value="bar">
-                <label for="bar">bar</label>
-                <br/>
-            
-                <input type="radio" id="baz" name="desk" value="baz">
-                <label for="baz">baz</label>
-                <br/>
-            
-                <input type="radio" id="foo1" name="desk" value="foo1">
-                <label for="foo1">foo1</label>
-                <br/>
-            
-                <input type="radio" id="foo2" name="desk" value="foo2">
-                <label for="foo2">foo2</label>
-                <br/>
-            
-                <input type="radio" id="foo3" name="desk" value="foo3">
-                <label for="foo3">foo3</label>
-                <br/>
-            
-                <input type="radio" id="foo10" name="desk" value="foo10">
-                <label for="foo10">foo10</label>
-                <br/>
-            
-                <input type="radio" id="qux" name="desk" value="qux">
-                <label for="qux">qux</label>
-                <br/>
-            
-            <br/>
-            <button type="submit">Book!</button>
-        </form>
-    
+    <h2>Book a desk for 03/01/2200</h2>
+    <form method="POST">
+        <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
+        <input type="radio" id="bar" name="desk" value="bar">
+        <label for="bar">bar</label>
+        <br/>
+        <input type="radio" id="baz" name="desk" value="baz">
+        <label for="baz">baz</label>
+        <br/>
+        <input type="radio" id="foo1" name="desk" value="foo1">
+        <label for="foo1">foo1</label>
+        <br/>
+        <input type="radio" id="foo2" name="desk" value="foo2">
+        <label for="foo2">foo2</label>
+        <br/>
+        <input type="radio" id="foo3" name="desk" value="foo3">
+        <label for="foo3">foo3</label>
+        <br/>
+        <input type="radio" id="foo10" name="desk" value="foo10">
+        <label for="foo10">foo10</label>
+        <br/>
+        <input type="radio" id="qux" name="desk" value="qux">
+        <label for="qux">qux</label>
+        <br/>
+        <br/>
+        <button type="submit">Book!</button>
+    </form>
 </div>
 </body>
 </html>
