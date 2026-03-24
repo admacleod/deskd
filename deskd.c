@@ -75,10 +75,25 @@ main(int argc, char *argv[])
 	}
 
 	if (strcmp(dbpath, ":memory:") != 0) {
-		if (unveil(dbpath, "rwc") != 0) {
-			fprintf(stderr, "unveil: %s\n", dbpath);
-			free(dbpath);
-			return 1;
+		/*
+		 * Unveil the directory containing the database, not just
+		 * the file itself. SQLite creates auxiliary files (-journal,
+		 * -wal, -shm) alongside the database that must be accessible.
+		 */
+		char *slash = strrchr(dbpath, '/');
+		if (slash != NULL) {
+			*slash = '\0';
+			if (unveil(dbpath, "rwc") != 0) {
+				fprintf(stderr, "unveil: %s\n", dbpath);
+				free(dbpath);
+				return 1;
+			}
+		} else {
+			if (unveil(".", "rwc") != 0) {
+				fprintf(stderr, "unveil: .\n");
+				free(dbpath);
+				return 1;
+			}
 		}
 	}
 	free(dbpath);
