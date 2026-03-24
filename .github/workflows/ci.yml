@@ -1,0 +1,23 @@
+name: CI
+permissions:
+  contents: read
+on:
+  push:
+jobs:
+  openbsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: vmactions/openbsd-vm@v2
+        with:
+          prepare: |
+            pkg_add sqlite3
+          run: echo "VM ready"
+      - name: build
+        shell: openbsd {0}
+        run: make
+      - name: test
+        shell: openbsd {0}
+        run: perl test/test.pl ./deskd

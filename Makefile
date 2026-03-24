@@ -1,5 +1,5 @@
 CC ?= cc
-CFLAGS += -Wall -Wextra -pedantic -std=c23
+CFLAGS += -Wall -Wextra -pedantic -std=c23 -Werror
 LDFLAGS += -lsqlite3
 
 SRCS = deskd.c cgi.c db.c natural.c about.c dateform.c bookings.c \
