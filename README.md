@@ -1,22 +1,44 @@
 # Desk Booking
 
-This is a fairly simple desk booking system. 
+This is a fairly simple desk booking system.
 It is purposefully simple to make it easier to deploy.
 
 The code is made available under the [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html).
 For commercial licences please get in touch.
 
-`deskd` is intended to be run as a cgi program on a web server.
+`deskd` is intended to be run as a CGI program on a web server.
 
 ## Building
 
-Everything is Go, so you can just use `go build` or `go install` to build binaries.
+`deskd` is written in C and only requires `sqlite3` as an external dependency.
+On OpenBSD, install the sqlite3 package and then build with make:
+```
+pkg_add sqlite3
+make
+```
 
-It is now possible (and strongly recommended) to statically build like so:
+The build uses `cc` with `-std=c23` and links against `-lsqlite3`.
+All other dependencies are satisfied by the C libraries available in OpenBSD base.
+
+On macOS (for development and testing), install sqlite3 via Homebrew and build
+with the appropriate include and library paths:
 ```
-CGO_ENABLED=1 go build -ldflags="-s -extldflags=-static" -o deskd
+brew install sqlite3
+make CFLAGS="-I$(brew --prefix sqlite3)/include" LDFLAGS="-L$(brew --prefix sqlite3)/lib"
 ```
-so that no libraries need to be copied around if running in chroot or scratch containers.
+
+A `compat.h` header provides shims for OpenBSD-specific functions (`reallocarray`,
+`pledge`, `unveil`) so that the code compiles on other platforms without reducing
+the safety of the OpenBSD build.
+
+### Database migration
+
+Before first use, run the migration to create the database schema:
+```
+./deskd migrate
+```
+
+This is safe to run repeatedly as it uses `CREATE TABLE IF NOT EXISTS`.
 
 ## Configuration
 
@@ -70,7 +92,7 @@ so copy this file into a suitable location, I tend to choose
 `/var/www/htdocs/static`.
 
 If you would like deskd to use your favicon and display a floorplan when booking
-desks then copy `favicon.ico` and `floorplan.png` into the same location, and it 
+desks then copy `favicon.ico` and `floorplan.png` into the same location, and it
 will use them from there.
 
 ### Configure httpd
@@ -124,43 +146,57 @@ fix this), just make sure it can be read and written by `www` user.
 
 # Development Documentation
 
-`deskd` is attempted to be laid out in a sensible sort of fashion.
-What I'm going for is to have each path as individual as possible.
-So rather than creating objects to handle all the required
-functionality, instead each path should be able to be considered
-as a totally separate script or application.
+`deskd` is laid out so that each route handler is as independent as possible.
+Rather than creating shared objects to handle all the required functionality,
+each path can be considered as a totally separate script or application.
 
-The rationale behind this separation is that this software is
-intended to run as a CGI script; this means that every request
-results in a new invocation of the entire application.
-In some regards this is useful because the expected traffic on
-the deployed application is very low and CGI means that there is
-no resource usage at all.
-However, if I want to "optimize" (and bear in mind this is a toy
-project for me, so premature optimization is one of the goals),
-then each invocation should only consume the resources (database
-connections, filesystem access) required to process that single
-path.
-The separation is also useful in case I ever wish to split the
-application into actual separate scripts, which I am still 
-undecided on, mainly because it makes deployment more challenging.
+The rationale behind this separation is that this software is intended to run
+as a CGI script; this means that every request results in a new invocation of
+the entire application. In some regards this is useful because the expected
+traffic on the deployed application is very low and CGI means that there is no
+resource usage at all.
+
+However, if I want to "optimize" (and bear in mind this is a toy project for
+me, so premature optimization is one of the goals), then each invocation should
+only consume the resources (database connections, filesystem access) required to
+process that single path.
+
+The separation is also useful in case I ever wish to split the application into
+actual separate scripts, which I am still undecided on, mainly because it makes
+deployment more challenging.
+
+## Source layout
+
+| File             | Purpose                                              |
+|------------------|------------------------------------------------------|
+| `deskd.c`        | Entry point, argument handling, and CGI routing       |
+| `cgi.c` / `cgi.h`| CGI response helpers, form/cookie parsing, CSRF, dates|
+| `db.c` / `db.h`  | SQLite database access and query functions            |
+| `natural.c` / `natural.h` | Natural sort collation for SQLite             |
+| `compat.h`       | Portability shims for non-OpenBSD platforms           |
+| `about.c`        | GET /about handler                                   |
+| `dateform.c`     | GET /book handler (date picker and redirect)         |
+| `bookingform.c`  | GET /book/\<date\> handler (desk selection form)     |
+| `book.c`         | POST /book/\<date\> handler (create booking)         |
+| `bookings.c`     | GET / handler (list user's bookings)                 |
+| `cancel.c`       | POST / handler (cancel a booking)                    |
+| `html/`          | Static HTML fragments embedded at compile time via `#embed` |
+| `sql/`           | SQL statements embedded at compile time via `#embed`  |
 
 ## Dependencies
 
-External dependencies are kept to a minimum:
-- A sqlite driver (no such driver exists in the standard library for good reasons).
-  The mattn/go-sqlite3 driver has been selected as it is the most popular and is,
-  at the time of writing, the only one in the list at https://go.dev/wiki/SQLDrivers
-  and is included in, and passes, the https://github.com/bradfitz/go-sql-test
-  test suite. (Yes, I know this is a sort of meaningless bar to cross, but it is at
-  least _something_).
-- A natural sorting library. This is helpful to handle human-friendly sorting of
-  desks, and no such sorting function exists in the standard library.
-  The maruel/natural library has been selected as it is both popular, recently
-  updated (it slots neatly into the new `slices.Sort` function), has a comprehensive
-  test suite, and takes care to reduce memory allocations, which isn't that
-  important for this application, but is a useful metric that the author has taken
-  some care (or just loves optimization)!
+The only external dependency is `sqlite3`, which provides the database library.
+Everything else uses C libraries available in OpenBSD base:
+
+- `stdio.h`, `stdlib.h`, `string.h` — standard I/O, memory, and string handling
+- `time.h` — date parsing and formatting (`strptime`, `strftime`, `timegm`)
+- `ctype.h` — character classification for URL decoding and natural sort
+- `sys/stat.h` — directory creation for database path
+- `arc4random_buf` — CSRF token generation (OpenBSD base, also available on macOS)
+- `timingsafe_bcmp` — constant-time comparison for CSRF validation (OpenBSD base;
+  shim provided for other platforms via `compat.h`)
+- `reallocarray` — overflow-checked array allocation (OpenBSD base; shim provided
+  for platforms that lack it via `compat.h`)
 
 ## Database
 
