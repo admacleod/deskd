@@ -157,8 +157,13 @@ main(int argc, char *argv[])
 	} else if (strcmp(method, "POST") == 0 && pathlen > 6 &&
 	    strncmp(path, "/book/", 6) == 0) {
 		handle_book(path + 6);
+	} else if (strcmp(path, "/") == 0 ||
+	    strcmp(path, "/about") == 0 ||
+	    strcmp(path, "/book") == 0 ||
+	    (pathlen > 6 && strncmp(path, "/book/", 6) == 0)) {
+		cgi_error(405);
 	} else {
-		cgi_error(400);
+		cgi_error(404);
 	}
 
 	free(path_copy);
