@@ -46,6 +46,10 @@ status_text(int code)
 		return "Unauthorized";
 	case 403:
 		return "Forbidden";
+	case 404:
+		return "Not Found";
+	case 405:
+		return "Method Not Allowed";
 	case 409:
 		return "Conflict";
 	case 500:
