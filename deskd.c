@@ -142,26 +142,30 @@ main(int argc, char *argv[])
 	pathlen = strlen(path);
 
 	/* Route the request. */
-	if (strcmp(method, "GET") == 0 && strcmp(path, "/about") == 0) {
-		handle_about();
-	} else if (strcmp(method, "GET") == 0 && strcmp(path, "/") == 0) {
-		handle_bookings();
-	} else if (strcmp(method, "POST") == 0 && strcmp(path, "/") == 0) {
-		handle_cancel();
-	} else if (strcmp(method, "GET") == 0 &&
-	    strcmp(path, "/book") == 0) {
-		handle_dateform();
-	} else if (strcmp(method, "GET") == 0 && pathlen > 6 &&
-	    strncmp(path, "/book/", 6) == 0) {
-		handle_bookingform(path + 6);
-	} else if (strcmp(method, "POST") == 0 && pathlen > 6 &&
-	    strncmp(path, "/book/", 6) == 0) {
-		handle_book(path + 6);
-	} else if (strcmp(path, "/") == 0 ||
-	    strcmp(path, "/about") == 0 ||
-	    strcmp(path, "/book") == 0 ||
-	    (pathlen > 6 && strncmp(path, "/book/", 6) == 0)) {
-		cgi_error(405);
+	if (strcmp(path, "/") == 0) {
+		if (strcmp(method, "GET") == 0)
+			handle_bookings();
+		else if (strcmp(method, "POST") == 0)
+			handle_cancel();
+		else
+			cgi_error(405);
+	} else if (strcmp(path, "/about") == 0) {
+		if (strcmp(method, "GET") == 0)
+			handle_about();
+		else
+			cgi_error(405);
+	} else if (strcmp(path, "/book") == 0) {
+		if (strcmp(method, "GET") == 0)
+			handle_dateform();
+		else
+			cgi_error(405);
+	} else if (pathlen > 6 && strncmp(path, "/book/", 6) == 0) {
+		if (strcmp(method, "GET") == 0)
+			handle_bookingform(path + 6);
+		else if (strcmp(method, "POST") == 0)
+			handle_book(path + 6);
+		else
+			cgi_error(405);
 	} else {
 		cgi_error(404);
 	}
