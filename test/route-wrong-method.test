@@ -1,4 +1,4 @@
-Wrong HTTP method for a known route returns 400.
+Wrong HTTP method for a known route returns 405.
 ---
 ---
 ---
@@ -8,7 +8,7 @@ SERVER_PROTOCOL=HTTP/1.1
 ---
 ---
 ---
-Status: 400 Bad Request
+Status: 405 Method Not Allowed
 Content-Type: text/plain; charset=utf-8
 
-Bad Request
+Method Not Allowed
