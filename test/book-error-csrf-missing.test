@@ -1,0 +1,24 @@
+Book page errors when the CSRF cookie is absent.
+---
+foo
+bar
+---
+baz@example.com,bar,2200-01-01
+baz@example.com,foo,2200-01-02
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/book/2200-01-03
+REQUEST_METHOD=POST
+REMOTE_USER=baz@example.com
+CONTENT_TYPE=application/x-www-form-urlencoded
+CONTENT_LENGTH=19
+---
+_csrf=qux&desk=foo
+---
+baz@example.com,bar,2200-01-01
+baz@example.com,foo,2200-01-02
+---
+Status: 403 Forbidden
+Content-Type: text/plain; charset=utf-8
+
+Forbidden

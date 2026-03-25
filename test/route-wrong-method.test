@@ -1,0 +1,14 @@
+Wrong HTTP method for a known route returns 400.
+---
+---
+---
+REQUEST_URI=/about
+REQUEST_METHOD=POST
+SERVER_PROTOCOL=HTTP/1.1
+---
+---
+---
+Status: 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+
+Bad Request

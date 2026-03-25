@@ -1,0 +1,63 @@
+Bookings page HTML-escapes desk names.
+---
+<b>desk</b>
+---
+baz@example.com,<b>desk</b>,2200-01-01
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/
+REQUEST_METHOD=GET
+REMOTE_USER=baz@example.com
+---
+---
+baz@example.com,<b>desk</b>,2200-01-01
+---
+Status: 200 OK
+Content-Type: text/html; charset=utf-8
+Set-Cookie: deskd_csrf=REGEX{(?<CSRF>.+?)}; Path=/; Max-Age=3600; HttpOnly; Secure; SameSite=Strict
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<title>Hot Desk</title>
+<body>
+<nav>
+    <h1><a href="/about">Hot Desk</a></h1>
+    <a href="/">Your Bookings</a> |
+    <a href="/book">Desk Booking</a>
+</nav>
+<div>
+    
+        <h1>Your Upcoming Bookings</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Desk</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            
+                <tr>
+                    <td>01/01/2200</td>
+                    <td>&lt;b&gt;desk&lt;/b&gt;</td>
+                    <td style="text-align: center">
+                        <form method="POST">
+                            <input type="hidden" name="_csrf" value="REGEX{\k<CSRF>}">
+                            <input type="hidden" name="desk" value="&lt;b&gt;desk&lt;/b&gt;">
+                            <input type="hidden" name="day" value="2200-01-01">
+                            <button type="submit">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+            
+            </tbody>
+        </table>
+    
+</div>
+</body>
+</html>

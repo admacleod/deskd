@@ -1,0 +1,23 @@
+Cancel page redirects even when the booking does not exist.
+---
+foo
+bar
+---
+baz@example.com,bar,2200-01-01
+---
+SERVER_PROTOCOL=HTTP/1.1
+REQUEST_URI=/
+REQUEST_METHOD=POST
+REMOTE_USER=baz@example.com
+HTTP_COOKIE=deskd_csrf=qux
+CONTENT_TYPE=application/x-www-form-urlencoded
+CONTENT_LENGTH=34
+---
+_csrf=qux&desk=foo&day=2200-01-03
+---
+baz@example.com,bar,2200-01-01
+---
+Status: 303 See Other
+Content-Type: text/plain; charset=utf-8
+Location: /
+Set-Cookie: deskd_csrf=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict
