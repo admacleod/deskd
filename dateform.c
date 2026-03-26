@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "cgi.h"
 #include "dateform.h"
@@ -39,12 +38,11 @@ static const char dateform_page[] = {
 void
 handle_dateform(void)
 {
-	const char	*uri;
-	char		*day, redirect[256], datestr[16];
+	char redirect[256], datestr[16];
 	struct tm	 tm;
 
-	uri = getenv("REQUEST_URI");
-	day = cgi_query_get(uri, DATE_KEY);
+	const char *uri = getenv("REQUEST_URI");
+	char *day = cgi_query_get(uri, DATE_KEY);
 	if (day == NULL || *day == '\0') {
 		free(day);
 		cgi_status(200);

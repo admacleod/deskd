@@ -19,9 +19,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "compat.h"
 #include "cgi.h"
@@ -31,7 +29,7 @@
  * Returns "Unknown" for unrecognised codes.
  */
 static const char *
-status_text(int code)
+status_text(const int code)
 {
 	switch (code) {
 	case 200:
@@ -63,7 +61,7 @@ status_text(int code)
  * Output the CGI Status header line.
  */
 void
-cgi_status(int code)
+cgi_status(const int code)
 {
 	printf("Status: %d %s\n", code, status_text(code));
 }
@@ -92,7 +90,7 @@ cgi_end_headers(void)
  * blank line, status text with trailing newline.
  */
 void
-cgi_error(int code)
+cgi_error(const int code)
 {
 	cgi_status(code);
 	cgi_header("Content-Type", "text/plain; charset=utf-8");
@@ -105,7 +103,7 @@ cgi_error(int code)
  * Used when CSRF validation succeeded but a subsequent check failed.
  */
 void
-cgi_error_csrf(int code)
+cgi_error_csrf(const int code)
 {
 	cgi_status(code);
 	cgi_header("Content-Type", "text/plain; charset=utf-8");
@@ -118,7 +116,7 @@ cgi_error_csrf(int code)
  * Output a CGI redirect response with HTML body (for GET redirects).
  */
 void
-cgi_redirect(int code, const char *location)
+cgi_redirect(const int code, const char *location)
 {
 	cgi_status(code);
 	cgi_header("Content-Type", "text/html; charset=utf-8");
@@ -134,7 +132,7 @@ cgi_redirect(int code, const char *location)
  * redirects). Headers only, no body.
  */
 void
-cgi_redirect_csrf(int code, const char *location)
+cgi_redirect_csrf(const int code, const char *location)
 {
 	cgi_status(code);
 	cgi_header("Content-Type", "text/plain; charset=utf-8");
@@ -150,16 +148,13 @@ cgi_redirect_csrf(int code, const char *location)
 void
 cgi_url_decode(char *s)
 {
-	char	*r, *w;
-	int	 hi, lo;
-
-	r = s;
-	w = s;
+	const char *r = s;
+	char *w = s;
 	while (*r != '\0') {
 		if (*r == '%' && isxdigit((unsigned char)r[1]) &&
 		    isxdigit((unsigned char)r[2])) {
-			hi = r[1];
-			lo = r[2];
+			int hi = r[1];
+			int lo = r[2];
 			if (hi >= '0' && hi <= '9')
 				hi -= '0';
 			else if (hi >= 'a' && hi <= 'f')
@@ -193,22 +188,21 @@ cgi_url_decode(char *s)
 static char *
 parse_params(const char *params, const char *key)
 {
-	char	*copy, *p, *pair, *k, *v, *result;
-	size_t	 keylen;
+	char *p, *pair;
 
 	if (params == NULL || key == NULL)
 		return NULL;
 
-	copy = strdup(params);
+	char *copy = strdup(params);
 	if (copy == NULL)
 		return NULL;
 
-	keylen = strlen(key);
-	result = NULL;
+	const size_t keylen = strlen(key);
+	char *result = NULL;
 	p = copy;
 	while ((pair = strsep(&p, "&")) != NULL) {
-		k = pair;
-		v = strchr(pair, '=');
+		const char *k = pair;
+		char *v = strchr(pair, '=');
 		if (v != NULL)
 			*v++ = '\0';
 		else
@@ -233,9 +227,7 @@ parse_params(const char *params, const char *key)
 char *
 cgi_query_get(const char *uri, const char *key)
 {
-	const char	*qs;
-
-	qs = getenv("QUERY_STRING");
+	const char *qs = getenv("QUERY_STRING");
 	if (qs != NULL)
 		return parse_params(qs, key);
 
@@ -265,27 +257,25 @@ cgi_form_get(const char *body, const char *key)
 char *
 cgi_cookie_get(const char *name)
 {
-	const char	*cookies;
-	char		*copy, *p, *pair, *k, *v, *result;
-	size_t		 namelen;
+	char *p, *pair;
 
-	cookies = getenv("HTTP_COOKIE");
+	const char *cookies = getenv("HTTP_COOKIE");
 	if (cookies == NULL)
 		return NULL;
 
-	copy = strdup(cookies);
+	char *copy = strdup(cookies);
 	if (copy == NULL)
 		return NULL;
 
-	namelen = strlen(name);
-	result = NULL;
+	const size_t namelen = strlen(name);
+	char *result = NULL;
 	p = copy;
 	while ((pair = strsep(&p, ";")) != NULL) {
 		/* Skip leading whitespace. */
 		while (*pair == ' ')
 			pair++;
-		k = pair;
-		v = strchr(pair, '=');
+		const char *k = pair;
+		char *v = strchr(pair, '=');
 		if (v == NULL)
 			continue;
 		*v++ = '\0';
@@ -334,14 +324,12 @@ char *
 cgi_csrf_generate(void)
 {
 	unsigned char	 buf[16];
-	char		*token;
-	int		 i;
 
 	arc4random_buf(buf, sizeof(buf));
-	token = malloc(sizeof(buf) * 2 + 1);
+	char *token = malloc(sizeof(buf) * 2 + 1);
 	if (token == NULL)
 		return NULL;
-	for (i = 0; i < (int)sizeof(buf); i++)
+	for (int i = 0; i < (int)sizeof(buf); i++)
 		snprintf(token + i * 2, 3, "%02x", buf[i]);
 	token[sizeof(buf) * 2] = '\0';
 	return token;
@@ -357,25 +345,21 @@ cgi_csrf_generate(void)
 int
 cgi_csrf_check(const char *form_token)
 {
-	char	*cookie_token;
-	size_t	 clen, flen;
-	int	 result;
-
 	if (form_token == NULL)
 		return 0;
 
-	cookie_token = cgi_cookie_get(CSRF_COOKIE);
+	char *cookie_token = cgi_cookie_get(CSRF_COOKIE);
 	if (cookie_token == NULL)
 		return 0;
 
-	clen = strlen(cookie_token);
-	flen = strlen(form_token);
+	const size_t clen = strlen(cookie_token);
+	const size_t flen = strlen(form_token);
 	if (clen != flen) {
 		free(cookie_token);
 		return 0;
 	}
 
-	result = timingsafe_bcmp(cookie_token, form_token, clen) == 0;
+	const int result = timingsafe_bcmp(cookie_token, form_token, clen) == 0;
 	free(cookie_token);
 	return result;
 }
@@ -424,11 +408,9 @@ int
 date_parse(const char *s, struct tm *tm)
 {
 	struct tm	check;
-	char		*end;
-	time_t		t;
 
 	memset(tm, 0, sizeof(*tm));
-	end = strptime(s, DATE_FORMAT, tm);
+	const char *end = strptime(s, DATE_FORMAT, tm);
 	if (end == NULL || *end != '\0')
 		return -1;
 
@@ -437,7 +419,7 @@ date_parse(const char *s, struct tm *tm)
 	 * Normalise via timegm and check the fields match.
 	 */
 	check = *tm;
-	t = timegm(&check);
+	const time_t t = timegm(&check);
 	if (t == -1)
 		return -1;
 	if (check.tm_year != tm->tm_year ||
@@ -460,7 +442,7 @@ int
 date_is_past(const struct tm *tm)
 {
 	struct tm	now_tm, date_tm;
-	time_t		now, date_t;
+	time_t		now;
 
 	time(&now);
 	gmtime_r(&now, &now_tm);
@@ -473,7 +455,7 @@ date_is_past(const struct tm *tm)
 	date_tm.tm_hour = 0;
 	date_tm.tm_min = 0;
 	date_tm.tm_sec = 0;
-	date_t = timegm(&date_tm);
+	const time_t date_t = timegm(&date_tm);
 
 	return date_t < now;
 }
@@ -483,7 +465,7 @@ date_is_past(const struct tm *tm)
  * storage format used in the SQLite database.
  */
 void
-date_format(const struct tm *tm, char *buf, size_t len)
+date_format(const struct tm *tm, char *buf, const size_t len)
 {
 	strftime(buf, len, DATE_FORMAT, tm);
 }
@@ -493,7 +475,7 @@ date_format(const struct tm *tm, char *buf, size_t len)
  * in the web interface.
  */
 void
-date_display(const struct tm *tm, char *buf, size_t len)
+date_display(const struct tm *tm, char *buf, const size_t len)
 {
 	strftime(buf, len, DISPLAY_FORMAT, tm);
 }
