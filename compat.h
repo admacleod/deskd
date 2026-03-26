@@ -27,7 +27,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 
 #ifdef __OpenBSD__
@@ -41,7 +40,7 @@
  */
 #if !defined(__OpenBSD__) && !defined(__GLIBC__)
 static inline void *
-reallocarray(void *ptr, size_t nmemb, size_t size)
+reallocarray(void *ptr, const size_t nmemb, const size_t size)
 {
 	if (size != 0 && nmemb > SIZE_MAX / size) {
 		errno = ENOMEM;

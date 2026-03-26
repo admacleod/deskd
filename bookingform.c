@@ -19,8 +19,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 #include "cgi.h"
 #include "db.h"
@@ -39,16 +37,13 @@ static const char html_head[] = {
 void
 handle_bookingform(const char *day_param)
 {
-	const char		*user;
-	char			*csrf;
-	sqlite3			*db;
 	struct booking_list	 bl;
 	struct desk_list	 dl;
 	struct tm		 tm;
 	char			 display[16], datestr[16];
 	int			 i;
 
-	user = getenv("REMOTE_USER");
+	const char *user = getenv("REMOTE_USER");
 	if (user == NULL || *user == '\0') {
 		cgi_error(401);
 		return;
@@ -63,7 +58,7 @@ handle_bookingform(const char *day_param)
 	date_format(&tm, datestr, sizeof(datestr));
 	date_display(&tm, display, sizeof(display));
 
-	db = db_open();
+	sqlite3 *db = db_open();
 	if (db == NULL) {
 		cgi_error(500);
 		return;
@@ -87,7 +82,7 @@ handle_bookingform(const char *day_param)
 	}
 	db_close(db);
 
-	csrf = cgi_csrf_generate();
+	char *csrf = cgi_csrf_generate();
 	if (csrf == NULL) {
 		booking_list_free(&bl);
 		desk_list_free(&dl);

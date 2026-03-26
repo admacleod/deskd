@@ -19,8 +19,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 #include "cgi.h"
 #include "db.h"
@@ -40,22 +38,17 @@
 void
 handle_cancel(void)
 {
-	const char	*user;
-	char		*body, *csrf_form, *desk, *day;
 	char		 datestr[16];
-	long		 content_length;
-	size_t		 nread;
 	struct tm	 tm;
-	sqlite3		*db;
 
-	user = getenv("REMOTE_USER");
+	const char *user = getenv("REMOTE_USER");
 	if (user == NULL || *user == '\0') {
 		cgi_error(401);
 		return;
 	}
 
-	/* Read POST body. */
-	content_length = 0;
+	/* Read the POST body. */
+	long content_length = 0;
 	if (getenv("CONTENT_LENGTH") != NULL)
 		content_length = strtol(getenv("CONTENT_LENGTH"), NULL, 10);
 	if (content_length <= 0 || content_length > MAX_BODY) {
@@ -63,16 +56,16 @@ handle_cancel(void)
 		return;
 	}
 
-	body = malloc((size_t)content_length + 1);
+	char *body = malloc((size_t) content_length + 1);
 	if (body == NULL) {
 		cgi_error(500);
 		return;
 	}
-	nread = fread(body, 1, (size_t)content_length, stdin);
+	const size_t nread = fread(body, 1, (size_t) content_length, stdin);
 	body[nread] = '\0';
 
 	/* CSRF check. */
-	csrf_form = cgi_form_get(body, CSRF_KEY);
+	char *csrf_form = cgi_form_get(body, CSRF_KEY);
 	if (!cgi_csrf_check(csrf_form)) {
 		free(csrf_form);
 		free(body);
@@ -82,7 +75,7 @@ handle_cancel(void)
 	free(csrf_form);
 
 	/* Parse date from form. */
-	day = cgi_form_get(body, DATE_KEY);
+	char *day = cgi_form_get(body, DATE_KEY);
 	if (day == NULL || *day == '\0') {
 		free(day);
 		free(body);
@@ -108,7 +101,7 @@ handle_cancel(void)
 	date_format(&tm, datestr, sizeof(datestr));
 
 	/* Get desk from form. */
-	desk = cgi_form_get(body, DESK_KEY);
+	char *desk = cgi_form_get(body, DESK_KEY);
 	free(body);
 	if (desk == NULL || *desk == '\0') {
 		free(desk);
@@ -117,7 +110,7 @@ handle_cancel(void)
 	}
 
 	/* Delete booking. */
-	db = db_open();
+	sqlite3 *db = db_open();
 	if (db == NULL) {
 		free(desk);
 		cgi_error_csrf(500);

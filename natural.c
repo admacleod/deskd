@@ -30,20 +30,15 @@
  * For example: "foo1", "foo2", "foo10" instead of "foo1", "foo10", "foo2".
  */
 int
-natural_compare(void *arg, int len1, const void *v1, int len2,
+natural_compare(void *arg, const int len1, const void *v1, const int len2,
     const void *v2)
 {
-	const char	*s1, *s2;
-	const char	*e1, *e2;
-	const char	*n1, *n2;
-	int		 nlen1, nlen2;
-
 	(void)arg;
 
-	s1 = v1;
-	s2 = v2;
-	e1 = s1 + len1;
-	e2 = s2 + len2;
+	const char *s1 = v1;
+	const char *s2 = v2;
+	const char *e1 = s1 + len1;
+	const char *e2 = s2 + len2;
 
 	while (s1 < e1 && s2 < e2) {
 		if (isdigit((unsigned char)*s1) &&
@@ -55,15 +50,15 @@ natural_compare(void *arg, int len1, const void *v1, int len2,
 				s2++;
 
 			/* Find end of numeric run. */
-			n1 = s1;
+			const char *n1 = s1;
 			while (s1 < e1 && isdigit((unsigned char)*s1))
 				s1++;
-			n2 = s2;
+			const char *n2 = s2;
 			while (s2 < e2 && isdigit((unsigned char)*s2))
 				s2++;
 
-			nlen1 = (int)(s1 - n1);
-			nlen2 = (int)(s2 - n2);
+			const int nlen1 = (int) (s1 - n1);
+			const int nlen2 = (int) (s2 - n2);
 
 			/* Longer number is larger. */
 			if (nlen1 != nlen2)
@@ -71,9 +66,7 @@ natural_compare(void *arg, int len1, const void *v1, int len2,
 
 			/* Same length, compare digit by digit. */
 			if (nlen1 > 0) {
-				int cmp;
-
-				cmp = memcmp(n1, n2, nlen1);
+				const int cmp = memcmp(n1, n2, nlen1);
 				if (cmp != 0)
 					return cmp;
 			}

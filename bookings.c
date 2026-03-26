@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "cgi.h"
 #include "db.h"
@@ -39,21 +38,17 @@ static const char html_head[] = {
 void
 handle_bookings(void)
 {
-	const char		*user;
-	char			*csrf;
-	sqlite3			*db;
 	struct booking_list	 bl;
 	struct tm		 tm;
 	char			 display[16];
-	int			 i;
 
-	user = getenv("REMOTE_USER");
+	const char *user = getenv("REMOTE_USER");
 	if (user == NULL || *user == '\0') {
 		cgi_error(401);
 		return;
 	}
 
-	db = db_open();
+	sqlite3 *db = db_open();
 	if (db == NULL) {
 		cgi_error(500);
 		return;
@@ -68,7 +63,7 @@ handle_bookings(void)
 	}
 	db_close(db);
 
-	csrf = cgi_csrf_generate();
+	char *csrf = cgi_csrf_generate();
 	if (csrf == NULL) {
 		booking_list_free(&bl);
 		cgi_error(500);
@@ -95,7 +90,7 @@ handle_bookings(void)
 		printf("            </tr>\n");
 		printf("            </thead>\n");
 		printf("            <tbody>\n");
-		for (i = 0; i < bl.count; i++) {
+		for (int i = 0; i < bl.count; i++) {
 			memset(&tm, 0, sizeof(tm));
 			date_parse(bl.items[i].day, &tm);
 			date_display(&tm, display, sizeof(display));

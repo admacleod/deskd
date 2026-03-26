@@ -18,7 +18,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <sqlite3.h>
@@ -70,21 +69,19 @@ static const char sql_delete_booking[] = {
 char *
 dsn_to_path(const char *dsn)
 {
-	const char	*start, *end;
-	char		*path;
 	size_t		 len;
 
-	start = dsn;
+	const char *start = dsn;
 	if (strncmp(start, "file:", 5) == 0)
 		start += 5;
 
-	end = strchr(start, '?');
+	const char *end = strchr(start, '?');
 	if (end != NULL)
 		len = (size_t)(end - start);
 	else
 		len = strlen(start);
 
-	path = malloc(len + 1);
+	char *path = malloc(len + 1);
 	if (path == NULL)
 		return NULL;
 	memcpy(path, start, len);
@@ -103,10 +100,9 @@ dsn_to_path(const char *dsn)
 sqlite3 *
 db_open(void)
 {
-	const char	*dsn;
 	sqlite3		*db;
 
-	dsn = getenv(DESKD_DB_ENV);
+	const char *dsn = getenv(DESKD_DB_ENV);
 	if (dsn == NULL || *dsn == '\0') {
 		fprintf(stderr, "DESKD_DB not set\n");
 		return NULL;
@@ -184,13 +180,10 @@ static int
 booking_list_add(struct booking_list *bl, const char *user, const char *desk,
     const char *day)
 {
-	struct booking	*new_items;
-	int		 newcap;
-
 	if (bl->count >= bl->cap) {
-		newcap = bl->cap == 0 ? 8 : bl->cap * 2;
-		new_items = reallocarray(bl->items, newcap,
-		    sizeof(struct booking));
+		const int newcap = bl->cap == 0 ? 8 : bl->cap * 2;
+		struct booking *new_items = reallocarray(bl->items, newcap,
+		                                         sizeof(struct booking));
 		if (new_items == NULL)
 			return -1;
 		bl->items = new_items;
@@ -220,9 +213,7 @@ booking_list_add(struct booking_list *bl, const char *user, const char *desk,
 void
 booking_list_free(struct booking_list *bl)
 {
-	int	i;
-
-	for (i = 0; i < bl->count; i++) {
+	for (int i = 0; i < bl->count; i++) {
 		free(bl->items[i].user);
 		free(bl->items[i].desk);
 		free(bl->items[i].day);
@@ -242,13 +233,10 @@ booking_list_free(struct booking_list *bl)
 static int
 desk_list_add(struct desk_list *dl, const char *desk)
 {
-	char	**new_items;
-	int	  newcap;
-
 	if (dl->count >= dl->cap) {
-		newcap = dl->cap == 0 ? 8 : dl->cap * 2;
-		new_items = reallocarray(dl->items, newcap,
-		    sizeof(char *));
+		const int newcap = dl->cap == 0 ? 8 : dl->cap * 2;
+		char **new_items = reallocarray(dl->items, newcap,
+		                                sizeof(char *));
 		if (new_items == NULL)
 			return -1;
 		dl->items = new_items;
@@ -270,9 +258,7 @@ desk_list_add(struct desk_list *dl, const char *desk)
 void
 desk_list_free(struct desk_list *dl)
 {
-	int	i;
-
-	for (i = 0; i < dl->count; i++)
+	for (int i = 0; i < dl->count; i++)
 		free(dl->items[i]);
 	free(dl->items);
 	dl->items = NULL;
@@ -425,10 +411,9 @@ db_insert_booking(sqlite3 *db, const char *user, const char *desk,
     const char *day)
 {
 	sqlite3_stmt	*stmt;
-	int		 rc;
 
 	if (sqlite3_prepare_v2(db, sql_insert_booking, -1, &stmt,
-	    NULL) != SQLITE_OK) {
+	                       NULL) != SQLITE_OK) {
 		fprintf(stderr, "prepare insert booking: %s\n",
 		    sqlite3_errmsg(db));
 		return -1;
@@ -438,7 +423,7 @@ db_insert_booking(sqlite3 *db, const char *user, const char *desk,
 	sqlite3_bind_text(stmt, 2, desk, -1, SQLITE_STATIC);
 	sqlite3_bind_text(stmt, 3, day, -1, SQLITE_STATIC);
 
-	rc = sqlite3_step(stmt);
+	const int rc = sqlite3_step(stmt);
 	sqlite3_finalize(stmt);
 
 	if (rc != SQLITE_DONE) {
@@ -456,10 +441,9 @@ db_delete_booking(sqlite3 *db, const char *user, const char *desk,
     const char *day)
 {
 	sqlite3_stmt	*stmt;
-	int		 rc;
 
 	if (sqlite3_prepare_v2(db, sql_delete_booking, -1, &stmt,
-	    NULL) != SQLITE_OK) {
+	                       NULL) != SQLITE_OK) {
 		fprintf(stderr, "prepare delete booking: %s\n",
 		    sqlite3_errmsg(db));
 		return -1;
@@ -469,7 +453,7 @@ db_delete_booking(sqlite3 *db, const char *user, const char *desk,
 	sqlite3_bind_text(stmt, 2, desk, -1, SQLITE_STATIC);
 	sqlite3_bind_text(stmt, 3, day, -1, SQLITE_STATIC);
 
-	rc = sqlite3_step(stmt);
+	const int rc = sqlite3_step(stmt);
 	sqlite3_finalize(stmt);
 
 	if (rc != SQLITE_DONE) {

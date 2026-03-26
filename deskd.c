@@ -18,7 +18,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "compat.h"
@@ -39,9 +38,7 @@
 static void
 handle_migrate(void)
 {
-	sqlite3	*db;
-
-	db = db_open();
+	sqlite3 *db = db_open();
 	if (db == NULL) {
 		fprintf(stderr, "cannot open database for migration\n");
 		exit(1);
@@ -55,20 +52,16 @@ handle_migrate(void)
 }
 
 int
-main(int argc, char *argv[])
+main(const int argc, char *argv[])
 {
-	const char	*method, *uri, *path, *dsn;
-	char		*path_copy, *qmark, *dbpath;
-	size_t		 pathlen;
-
 	/* Sandbox the process before any I/O. */
-	dsn = getenv(DESKD_DB_ENV);
+	const char *dsn = getenv(DESKD_DB_ENV);
 	if (dsn == NULL || *dsn == '\0') {
 		fprintf(stderr, "DESKD_DB environment variable not set\n");
 		return 1;
 	}
 
-	dbpath = dsn_to_path(dsn);
+	char *dbpath = dsn_to_path(dsn);
 	if (dbpath == NULL) {
 		fprintf(stderr, "cannot resolve database path\n");
 		return 1;
@@ -123,8 +116,8 @@ main(int argc, char *argv[])
 		return 0;
 	}
 
-	method = getenv("REQUEST_METHOD");
-	uri = getenv("REQUEST_URI");
+	const char *method = getenv("REQUEST_METHOD");
+	const char *uri = getenv("REQUEST_URI");
 
 	if (method == NULL || uri == NULL) {
 		fprintf(stderr, "missing CGI environment variables\n");
@@ -132,14 +125,14 @@ main(int argc, char *argv[])
 	}
 
 	/* Strip query string from URI to get the path. */
-	path_copy = strdup(uri);
+	char *path_copy = strdup(uri);
 	if (path_copy == NULL)
 		return 1;
-	qmark = strchr(path_copy, '?');
+	char *qmark = strchr(path_copy, '?');
 	if (qmark != NULL)
 		*qmark = '\0';
-	path = path_copy;
-	pathlen = strlen(path);
+	const char *path = path_copy;
+	const size_t pathlen = strlen(path);
 
 	/* Route the request. */
 	if (strcmp(path, "/") == 0) {
