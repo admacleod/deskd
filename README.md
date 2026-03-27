@@ -49,9 +49,10 @@ This is safe to run repeatedly as it uses `CREATE TABLE IF NOT EXISTS`.
 
 The configuration options are as follows:
 
-| Env        | Type     | Description                                                |
-|------------|----------|------------------------------------------------------------|
-| `DESKD_DB` | `string` | **Required.** The DSN used to access a sqlite database storing bookings. |
+| Env              | Type     | Description                                                |
+|------------------|----------|------------------------------------------------------------|
+| `DESKD_DB`       | `string` | **Required.** The DSN used to access a sqlite database storing bookings. |
+| `SQLITE_TMPDIR`  | `string` | Directory for SQLite temporary files. On OpenBSD this should be set to the database directory so that temp files are accessible inside the `unveil` sandbox. |
 
 The parent directory of the database file must already exist and be writable
 by the application. `deskd` will not create directories automatically.
@@ -122,6 +123,7 @@ server "deskd.example.com" {
 		fastcgi {
 			param SCRIPT_FILENAME "/cgi-bin/deskd"
 			param DESKD_DB "/db/deskd.db"
+			param SQLITE_TMPDIR "/db"
 		}
 	}
 }
