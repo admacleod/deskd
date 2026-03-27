@@ -95,6 +95,29 @@ main(const int argc, char *argv[])
 	}
 	free(dbpath);
 
+	/* SQLite reads /dev/urandom to seed its PRNG. */
+	if (unveil("/dev/urandom", "r") != 0) {
+		fprintf(stderr, "unveil: /dev/urandom\n");
+		return 1;
+	}
+
+	/*
+	 * If SQLITE_TMPDIR is set, unveil it so that SQLite can
+	 * create temporary files there (statement journals, transient
+	 * indices, materialised subqueries, VACUUM).  On OpenBSD the
+	 * default candidates (/var/tmp, /usr/tmp, /tmp) are blocked
+	 * by unveil, so deployers should point SQLITE_TMPDIR at a
+	 * directory that is already inside the chroot — typically
+	 * the same directory that holds the database.
+	 */
+	const char *tmpdir = getenv("SQLITE_TMPDIR");
+	if (tmpdir != NULL && *tmpdir != '\0') {
+		if (unveil(tmpdir, "rwc") != 0) {
+			fprintf(stderr, "unveil: %s\n", tmpdir);
+			return 1;
+		}
+	}
+
 	/* Lock the unveil list; no further paths can be added. */
 	if (unveil(NULL, NULL) != 0) {
 		fprintf(stderr, "unveil lock failed\n");
