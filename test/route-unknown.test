@@ -1,4 +1,4 @@
-Unknown route returns 404.
+Unknown route redirects to home page.
 ---
 ---
 ---
@@ -8,7 +8,8 @@ SERVER_PROTOCOL=HTTP/1.1
 ---
 ---
 ---
-Status: 404 Not Found
-Content-Type: text/plain; charset=utf-8
+Status: 302 Found
+Content-Type: text/html; charset=utf-8
+Location: /
 
-Not Found
+<a href="/">Found</a>.

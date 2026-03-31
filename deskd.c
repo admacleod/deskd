@@ -183,7 +183,7 @@ main(const int argc, char *argv[])
 		else
 			cgi_error(405);
 	} else {
-		cgi_error(404);
+		cgi_redirect(302, "/");
 	}
 
 	free(path_copy);
